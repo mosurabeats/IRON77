@@ -1,5 +1,5 @@
 // Offline cache: network-first for app files so updates show, cache fallback when offline.
-const CACHE = 'iron77-v2';
+const CACHE = 'iron77-v3';
 const FILES = ['./', 'index.html', 'styles.css', 'js/data.js', 'js/app.js', 'icon.svg', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {
