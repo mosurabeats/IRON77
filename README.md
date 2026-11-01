@@ -6,7 +6,7 @@ Named for 1977, the year of *Pumping Iron*.
 - **Today**: your next workout, Heavy Duty-style recovery status, macro progress and today's protocol doses.
 - **Train**: 7 classic programs, a set-by-set logger with last-time numbers, overload hints, a rest timer and a logbook.
 - **Fuel**: macro targets from Mentzer Balanced, Venice High-Protein or Gironda Low-Carb, with one-tap golden-era staples.
-- **Stack**: a protocol tracker for supplements, peptides and hormones (schedules, dose logging, site rotation, syringe maths, supply, adherence, bodyweight), plus an evidence-rated supplement guide. Settings has a reconstitution and dose calculator.
+- **Stack**: a protocol tracker for supplements, peptides and hormones (schedules, dose logging, site rotation, syringe maths, supply, adherence, bodyweight). Settings has a reconstitution and dose calculator.
 
 ## Run it
 No build step. Serve the folder and open it in a browser:

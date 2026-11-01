@@ -1,7 +1,7 @@
 // Offline support. Network-first for the app's own files, always revalidating with the
 // server (bypassing the browser's HTTP cache) so updates arrive as soon as they're online.
 // Falls back to the saved copy when offline. Bump VERSION on every release.
-const VERSION = '12';
+const VERSION = '13';
 const CACHE = 'iron77-v' + VERSION;
 const FILES = ['./', 'index.html', 'styles.css', 'js/data.js', 'js/app.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-32.png', 'icons/icon.svg', 'manifest.webmanifest'];
 

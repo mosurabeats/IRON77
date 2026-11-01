@@ -222,46 +222,6 @@ const PROGRAMS = [
   },
 ];
 
-/* evidence: strong | moderate | limited | none — based on current sports-nutrition research */
-const SUPPLEMENTS = [
-  { id: 'liver', name: 'Desiccated Liver Tablets', era: true, who: 'Vince Gironda, Arnold, Larry Scott',
-    purpose: 'Iron, B12 and "anti-fatigue". Gironda had his clients take them by the handful.',
-    evidence: 'limited', note: 'Nutrient-dense, but no proven performance benefit. Whole liver once a week gives you the same nutrients.' },
-  { id: 'blair', name: 'Milk & Egg Protein (Rheo H. Blair style)', era: true, who: 'Rheo Blair’s clients, Larry Scott',
-    purpose: 'Blair’s milk-and-egg protein powder, mixed with cream, was the original golden-era protein shake.',
-    evidence: 'strong', note: 'Protein powder works if it helps you reach your daily protein target. Blends of whey and casein are the modern equivalent.' },
-  { id: 'yeast', name: 'Brewer’s Yeast', era: true, who: 'Popular across 1960s–70s gyms',
-    purpose: 'B vitamins, chromium and protein.',
-    evidence: 'limited', note: 'Fine as food. Nothing special for muscle growth.' },
-  { id: 'wgo', name: 'Wheat Germ Oil / Octacosanol', era: true, who: 'Reg Park era and earlier',
-    purpose: 'Sold for endurance and vitality.',
-    evidence: 'none', note: 'Research has not shown meaningful ergogenic effects.' },
-  { id: 'kelp', name: 'Kelp Tablets', era: true, who: 'Contest-prep lore',
-    purpose: 'Iodine for "metabolism" during cutting.',
-    evidence: 'none', note: 'Excess iodine can disrupt thyroid function. Most people get enough from iodized salt.' },
-  { id: 'aminos', name: 'Amino Acid Tablets', era: true, who: 'Frank Zane and late-70s pros',
-    purpose: 'Spread protein intake across the day.',
-    evidence: 'limited', note: 'Redundant if you eat enough total protein.' },
-  { id: 'multi', name: 'Multivitamin / Minerals', era: true, who: 'Nearly everyone',
-    purpose: 'Insurance against dietary gaps.',
-    evidence: 'limited', note: 'Useful if your diet is restricted. It won’t add size.' },
-  { id: 'creatine', name: 'Creatine Monohydrate', era: false, who: 'Modern (post-1992), but essential',
-    purpose: 'More reps at a given weight, which means more strength and size over time.',
-    evidence: 'strong', note: '3–5 g daily, any time of day. The best-studied supplement in strength sport.' },
-  { id: 'whey', name: 'Whey Protein', era: false, who: 'The modern Blair shake',
-    purpose: 'Convenient, high-quality protein.',
-    evidence: 'strong', note: 'Only as useful as the protein gap it fills.' },
-  { id: 'caffeine', name: 'Caffeine (black coffee)', era: true, who: 'Venice Beach staple',
-    purpose: 'Focus and performance before training.',
-    evidence: 'strong', note: '3–6 mg per kg about 60 minutes before training. Avoid it late in the day.' },
-  { id: 'vitd', name: 'Vitamin D3', era: false, who: 'Modern',
-    purpose: 'Corrects deficiency, which is common in winter and with indoor living.',
-    evidence: 'moderate', note: 'Mainly helps if you are low. A blood test tells you.' },
-  { id: 'fishoil', name: 'Fish Oil (Omega-3)', era: false, who: 'Modern',
-    purpose: 'General health and joint comfort.',
-    evidence: 'moderate', note: 'Or just eat oily fish twice a week.' },
-];
-
 /* Macro approaches. pct = share of calories from carbs/protein/fat. proteinPerLb overrides protein if set. */
 const DIETS = [
   { id: 'mentzer', name: 'Mentzer Balanced', who: 'Mike Mentzer',

@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '12'; // keep in step with VERSION in sw.js
+const APP_VERSION = '13'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -32,7 +32,7 @@ const DEFAULT = {
   sessions: [],
   current: null,
   food: {},
-  stack: ['creatine', 'whey', 'liver'],
+  stack: [],
   stackLog: {},
   equipment: EQUIPMENT.map(([k]) => k).filter((k) => k !== 'nautilus'),
   equipSet: false,
@@ -223,7 +223,6 @@ const ring = (label, val, max, unit = 'g') => {
     <circle cx="32" cy="32" r="26" class="rf" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg>
     <b>${Math.round(val)}</b></div><span>${label}</span><em>of ${max}${unit}</em></div>`;
 };
-const evBadge = (e) => `<span class="badge ev-${e}">${{ strong: 'Strong evidence', moderate: 'Moderate', limited: 'Limited', none: 'No evidence' }[e]}</span>`;
 
 const V = {};
 
@@ -382,7 +381,6 @@ V.fuel = () => {
   <p class="muted small pad">Targets are estimates. Adjust by ~200 kcal if your weight isn't moving in the direction you want after 2–3 weeks.</p>`;
 };
 
-let stackFilter = 'all';
 const exRows = (onclick) => {
   const groups = {};
   for (const [n, e] of Object.entries(EXERCISES)) (groups[e[0]] ||= []).push(n);
@@ -518,7 +516,8 @@ const fmtNum = (n) => (Math.round(n * 100) / 100).toString();
 if (!S.protoMigrated) {
   S.compounds ||= []; S.doses ||= []; S.weights ||= [];
   for (const id of S.stack || []) {
-    const sup = SUPPLEMENTS.find((x) => x.id === id); if (!sup) continue;
+    const OLD = { liver: 'Desiccated Liver Tablets', blair: 'Milk & Egg Protein', yeast: 'Brewer\u2019s Yeast', wgo: 'Wheat Germ Oil', kelp: 'Kelp Tablets', aminos: 'Amino Acid Tablets', multi: 'Multivitamin', creatine: 'Creatine Monohydrate', whey: 'Whey Protein', caffeine: 'Caffeine', vitd: 'Vitamin D3', fishoil: 'Fish Oil (Omega-3)' };
+    const sup = OLD[id] && { id, name: OLD[id] }; if (!sup) continue;
     const cid = uid();
     S.compounds.push({ id: cid, guide: id, name: sup.name, kind: 'supplement', dose: '', unit: '', route: 'Oral', sched: { type: 'interval', every: 1 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '' });
     if ((S.stackLog[today()] || []).includes(id)) S.doses.push({ id: uid(), cid, date: today(), time: '08:00', amount: '', unit: '', site: '', note: '' });
@@ -669,11 +668,9 @@ function weightCard() {
 }
 
 /* --- Stack view --- */
-let stackTab = 'protocol';
 V.stack = () => `
   <header class="top"><h1>Stack</h1></header>
-  <div class="seg">${[['protocol', 'My protocol'], ['guide', 'Supplement guide']].map(([k, n]) => `<button class="${stackTab === k ? 'on' : ''}" data-act="stacktab" data-k="${k}">${n}</button>`).join('')}</div>
-  ${stackTab === 'protocol' ? V.protocol() : V.guide()}`;
+  ${V.protocol()}`;
 
 V.protocol = () => `
   <section class="card" style="margin-top:14px"><div class="row between"><h3>Today</h3><span class="muted small">${esc(fmtDate(today()))}</span></div>${protocolToday()}</section>
@@ -711,20 +708,6 @@ V.protocol = () => `
   <button class="btn ghost" data-act="summary">Export summary for your doctor</button>
   <p class="muted small pad">IRON77 tracks what you enter. It doesn't recommend doses. Keep whoever prescribes your protocol in the loop, and get bloodwork on a regular schedule.</p>`;
 
-V.guide = () => {
-  const list = SUPPLEMENTS.filter((s) => stackFilter === 'all' || (stackFilter === 'era' ? s.era : !s.era));
-  return `
-  <p class="muted pad">What the golden-era champions took, checked against what current research supports.</p>
-  <div class="seg pad">${[['all', 'All'], ['era', 'Golden Era'], ['modern', 'Modern']].map(([k, n]) => `<button class="${stackFilter === k ? 'on' : ''}" data-act="stackfilter" data-k="${k}">${n}</button>`).join('')}</div>
-  ${list.map((s) => `<section class="card">
-    <div class="row between"><span class="kicker">${s.era ? 'Golden era' : 'Modern'} · ${esc(s.who)}</span></div>
-    <h3>${esc(s.name)}</h3>
-    <p>${esc(s.purpose)}</p>
-    <p class="muted small">${evBadge(s.evidence)} ${esc(s.note)}</p>
-    <label class="check"><input type="checkbox" data-act="togglestack" data-id="${s.id}" ${S.compounds.some((c) => c.guide === s.id) ? 'checked' : ''}><span>In my protocol</span></label>
-  </section>`).join('')}
-  <p class="muted small pad">This is not medical advice. Check with a doctor before starting supplements, especially if you take medication.</p>`;
-};
 
 /* --- Sheets --- */
 const KIND_GROUPS = [['peptide', 'Peptides'], ['hormone', 'Hormones'], ['medication', 'Medications'], ['supplement', 'Supplements']];
@@ -906,7 +889,6 @@ document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]'); if (!el) return;
   const d = el.dataset; const c = d.id && compById(d.id);
   switch (d.act) {
-    case 'stacktab': stackTab = d.k; render(); break;
     case 'newcompound': openSheet(compoundPicker()); setTimeout(() => $('#sheet .search')?.focus(), 250); break;
     case 'pickcompound': {
       const t = COMPOUNDS.find((x) => x[0] === d.n);
@@ -952,12 +934,6 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('change', (ev) => {
   const el = ev.target;
   if (el.dataset.act === 'formsync') syncForm(el.form);
-  if (el.dataset.act === 'togglestack') {
-    const sup = SUPPLEMENTS.find((x) => x.id === el.dataset.id);
-    if (el.checked) S.compounds.push({ id: uid(), guide: sup.id, name: sup.name, kind: 'supplement', dose: '', unit: '', route: 'Oral', sched: { type: 'interval', every: 1 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '' });
-    else { const ids = S.compounds.filter((c) => c.guide === sup.id).map((c) => c.id); S.compounds = S.compounds.filter((c) => !ids.includes(c.id)); S.doses = S.doses.filter((x) => !ids.includes(x.cid)); }
-    save(); toast(el.checked ? `${sup.name} added to My protocol.` : `${sup.name} removed.`);
-  }
 });
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]'); if (!el) return;
@@ -1185,7 +1161,6 @@ document.addEventListener('click', (ev) => {
     case 'delfood': S.food[today()].splice(+d.i, 1); save(); render(); break;
     case 'setgoal': S.settings.goal = d.id; save(); render(); break;
     case 'setdiet': S.settings.diet = d.id; save(); render(); break;
-    case 'stackfilter': stackFilter = d.k; render(); break;
     case 'setunit': S.settings.unit = d.u; save(); render(); break;
     case 'export': {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
