@@ -205,3 +205,52 @@ body.locked { overflow: hidden; }
 @keyframes rise { from { transform: translateY(100%); } }
 @keyframes fade { from { opacity: 0; } }
 label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--ink); }
+
+/* protocol tracker */
+.dose-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.dose-row:first-of-type { border-top: 0; }
+.dose-tick { flex: none; width: 40px; height: 40px; border-radius: 10px; border: 2px solid var(--k); background: transparent; color: transparent; display: grid; place-items: center; cursor: pointer; }
+.dose-row.done .dose-tick { background: var(--k); color: var(--well); }
+.dose-main { flex: 1; min-width: 0; background: none; border: 0; padding: 0; text-align: left; color: var(--ink); font: inherit; cursor: pointer; }
+.dose-main b { display: block; font-weight: 600; }
+.dose-main span { display: block; font-size: 12px; color: var(--label); }
+.dose-row.done .dose-main b { color: var(--label); }
+.missed, .soon { margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.missed .link { padding: 0 0 0 4px; }
+.comp { box-shadow: inset 4px 0 0 var(--k); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.stats div { background: var(--well); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.stats span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--label); }
+.stats b { display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats em { display: block; font-style: normal; font-weight: 400; font-size: 11px; color: var(--label); }
+.stats .warn { font-style: normal; }
+.strip { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
+.strip i, .legend-row i { display: block; aspect-ratio: 1; border-radius: 3px; background: var(--well); }
+.strip i.hit, .legend-row i.hit { background: var(--accent); }
+.strip i.miss, .legend-row i.miss { background: var(--red); }
+.strip i.due, .legend-row i.due { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); }
+.legend-row { display: flex; align-items: center; gap: 6px; }
+.legend-row i { width: 12px; margin-left: 8px; }
+.legend-row i:first-child { margin-left: 0; }
+.wchart { width: 100%; height: auto; display: block; margin: 10px 0 4px; }
+.big-num { font: 400 22px var(--display); }
+.big-num small { font: 500 12px var(--mono); color: var(--label); }
+.wform { margin-top: 12px; }
+.wform .btn { margin: 0; width: auto; padding: 12px 18px; }
+.cform { display: grid; gap: 10px; margin-top: 8px; }
+.cform .grid2 { margin: 0; }
+.cform fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 12px; margin: 0; display: grid; gap: 10px; }
+.cform legend { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--label); padding: 0 6px; }
+.cform .btn { margin-top: 4px; }
+.f-wd, .f-n, .f-inj, .f-premix, .f-recon { display: none !important; }
+.cform[data-sched="wd"] .f-wd, .cform[data-sched="n"] .f-n { display: flex !important; }
+.cform[data-sched="n"] .f-n { display: block !important; }
+.cform[data-route="SubQ"] .f-inj, .cform[data-route="IM"] .f-inj { display: grid !important; }
+.cform[data-mix="premix"] .f-premix { display: block !important; }
+.cform[data-mix="recon"] .f-recon { display: grid !important; }
+.wdays { gap: 6px; flex-wrap: wrap; }
+.wd { flex: 1; min-width: 40px; text-transform: none; letter-spacing: 0; }
+.wd input { position: absolute; opacity: 0; pointer-events: none; }
+.wd span { display: block; text-align: center; padding: 9px 0; border-radius: 8px; background: var(--well); color: var(--welltext); font-size: 12px; cursor: pointer; }
+.wd input:checked + span { background: var(--solid); color: var(--solidtext); }
+textarea.summary { width: 100%; min-height: 260px; background: var(--well); color: var(--ink); border: 0; border-radius: 10px; padding: 12px; font: 12px/1.5 var(--mono); margin: 8px 0; resize: vertical; }

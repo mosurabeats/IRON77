@@ -35,6 +35,9 @@ const DEFAULT = {
   equipment: EQUIPMENT.map(([k]) => k).filter((k) => k !== 'nautilus'),
   equipSet: false,
   swaps: {},
+  compounds: [],
+  doses: [],
+  weights: [],
 };
 let S;
 try { S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -227,7 +230,6 @@ V.today = () => {
   const di = nextDayIdx(prog);
   const day = prog.days[di];
   const t = targets(), e = eaten();
-  const log = S.stackLog[today()] || [];
   const creed = CREED[new Date().getDate() % CREED.length];
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
@@ -253,11 +255,8 @@ V.today = () => {
   </section>
 
   <section class="card">
-    <div class="row between"><h3>Today's stack</h3><button class="link" data-act="go" data-v="stack">Edit ${IC.arrow}</button></div>
-    ${S.stack.length ? S.stack.map((id) => {
-      const s = SUPPLEMENTS.find((x) => x.id === id); if (!s) return '';
-      return `<label class="check"><input type="checkbox" data-act="takesupp" data-id="${id}" ${log.includes(id) ? 'checked' : ''}><span>${esc(s.name)}</span></label>`;
-    }).join('') : '<p class="muted">No supplements in your stack yet.</p>'}
+    <div class="row between"><h3>Today's protocol</h3><button class="link" data-act="go" data-v="stack">Manage ${IC.arrow}</button></div>
+    ${S.compounds.length ? protocolToday() : '<p class="muted small">Add your supplements, peptides and medications under Stack → My protocol.</p>'}
   </section>`;
 };
 
@@ -381,22 +380,6 @@ V.fuel = () => {
 };
 
 let stackFilter = 'all';
-V.stack = () => {
-  const list = SUPPLEMENTS.filter((s) => stackFilter === 'all' || (stackFilter === 'era' ? s.era : !s.era));
-  return `
-  <header class="top"><h1>Stack</h1></header>
-  <p class="muted pad">What the golden-era champions took, checked against what current research supports.</p>
-  <div class="seg pad">${[['all', 'All'], ['era', 'Golden Era'], ['modern', 'Modern']].map(([k, n]) => `<button class="${stackFilter === k ? 'on' : ''}" data-act="stackfilter" data-k="${k}">${n}</button>`).join('')}</div>
-  ${list.map((s) => `<section class="card">
-    <div class="row between"><span class="kicker">${s.era ? 'Golden era' : 'Modern'} · ${esc(s.who)}</span></div>
-    <h3>${esc(s.name)}</h3>
-    <p>${esc(s.purpose)}</p>
-    <p class="muted small">${evBadge(s.evidence)} ${esc(s.note)}</p>
-    <label class="check"><input type="checkbox" data-act="togglestack" data-id="${s.id}" ${S.stack.includes(s.id) ? 'checked' : ''}><span>In my daily stack</span></label>
-  </section>`).join('')}
-  <p class="muted small pad">This is not medical advice. Check with a doctor before starting supplements, especially if you take medication.</p>`;
-};
-
 V.legends = () => `
   <header class="top"><h1>Legends</h1></header>
   <p class="muted pad">Many champions of this era also used anabolic steroids. The training and eating principles below are what translate to natural lifters.</p>
@@ -513,6 +496,403 @@ V.settings = () => `
     </div>
   </section>`;
 
+/* ---------- protocol: compounds, doses, bodyweight ---------- */
+const ROUTES = ['SubQ', 'IM', 'Oral', 'Topical', 'Other'];
+const UNITS = ['mg', 'mcg', 'IU', 'g', 'ml', 'units', 'caps', 'tabs'];
+const KINDS = [['peptide', 'Peptide'], ['hormone', 'Hormone'], ['supplement', 'Supplement'], ['medication', 'Medication']];
+const SITES = {
+  SubQ: ['Abdomen L', 'Abdomen R', 'Thigh L', 'Thigh R', 'Love handle L', 'Love handle R'],
+  IM: ['Glute L', 'Glute R', 'Delt L', 'Delt R', 'Quad L', 'Quad R', 'Ventroglute L', 'Ventroglute R'],
+};
+const SCHEDS = [['1', 'Every day'], ['2', 'Every other day'], ['3', 'Every 3 days'], ['7', 'Once a week'], ['14', 'Every 2 weeks'], ['wd', 'Specific weekdays'], ['n', 'Every N days'], ['prn', 'As needed']];
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const isInj = (c) => c.route === 'SubQ' || c.route === 'IM';
+
+const dateAdd = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
+const dow = (d) => new Date(d + 'T12:00').getDay();
+const fmtShort = (d) => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
+const nowTime = () => new Date().toTimeString().slice(0, 5);
+const fmtNum = (n) => (Math.round(n * 100) / 100).toString();
+
+// One-time migration: old guide checkboxes become protocol items.
+if (!S.protoMigrated) {
+  S.compounds ||= []; S.doses ||= []; S.weights ||= [];
+  for (const id of S.stack || []) {
+    const sup = SUPPLEMENTS.find((x) => x.id === id); if (!sup) continue;
+    const cid = uid();
+    S.compounds.push({ id: cid, guide: id, name: sup.name, kind: 'supplement', dose: '', unit: '', route: 'Oral', sched: { type: 'interval', every: 1 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '' });
+    if ((S.stackLog[today()] || []).includes(id)) S.doses.push({ id: uid(), cid, date: today(), time: '08:00', amount: '', unit: '', site: '', note: '' });
+  }
+  S.stack = []; S.protoMigrated = true; save();
+}
+S.compounds ||= []; S.doses ||= []; S.weights ||= [];
+
+const compById = (id) => S.compounds.find((c) => c.id === id);
+const schedText = (c) => {
+  const s = c.sched;
+  if (s.type === 'prn') return 'As needed';
+  if (s.type === 'weekdays') return s.days.length === 7 ? 'Every day' : s.days.map((i) => DOW[i]).join(', ');
+  return ({ 1: 'Every day', 2: 'Every other day', 7: 'Once a week', 14: 'Every 2 weeks' })[s.every] || `Every ${s.every} days`;
+};
+const doseText = (c, amt = c.dose) => (amt !== '' && amt != null ? `${fmtNum(+amt)} ${c.unit}`.trim() : '');
+function isDue(c, d) {
+  if (c.paused || d < c.start || (c.end && d > c.end)) return false;
+  const s = c.sched;
+  if (s.type === 'prn') return false;
+  if (s.type === 'weekdays') return s.days.includes(dow(d));
+  return daysBetween(c.start, d) % Math.max(1, s.every) === 0;
+}
+const dosesOn = (cid, d) => S.doses.filter((x) => x.cid === cid && x.date === d);
+const lastDose = (cid) => S.doses.filter((x) => x.cid === cid).sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1))[0];
+function nextDue(c, from = today()) { for (let i = 0; i < 400; i++) { const d = dateAdd(from, i); if (isDue(c, d)) return d; } return null; }
+function missedOn(c) {
+  for (let i = 1; i <= 30; i++) {
+    const d = dateAdd(today(), -i);
+    if (d < c.start) return null;
+    if (isDue(c, d)) return dosesOn(c.id, d).length ? null : d;
+  }
+  return null;
+}
+function adherence(c, days = 28) {
+  let due = 0, hit = 0;
+  for (let i = 0; i < days; i++) {
+    const d = dateAdd(today(), -i);
+    if (!isDue(c, d)) continue;
+    const taken = dosesOn(c.id, d).length > 0;
+    if (i === 0 && !taken) continue; // today isn't missed yet
+    due++; if (taken) hit++;
+  }
+  return due ? Math.round((hit / due) * 100) : null;
+}
+const perWeek = (c) => (c.sched.type === 'prn' ? 0 : c.sched.type === 'weekdays' ? c.sched.days.length : 7 / Math.max(1, c.sched.every));
+function runwayDays(c) {
+  if (c.supply === '' || c.supply == null || !(+c.dose > 0) || !perWeek(c)) return null;
+  return Math.floor((+c.supply / (+c.dose * perWeek(c))) * 7);
+}
+const concOf = (c) => (c.mix?.type === 'premix' ? +c.mix.conc : c.mix?.type === 'recon' && +c.mix.water > 0 ? +c.mix.vial / +c.mix.water : 0);
+function drawText(c, amt = c.dose) {
+  const conc = concOf(c);
+  if (!(conc > 0) || !(+amt > 0) || !isInj(c)) return '';
+  const ml = +amt / conc;
+  return `Draw ${fmtNum(ml)} ml · ${fmtNum(ml * 100)} units (U-100)`;
+}
+function suggestSite(c) {
+  const sites = SITES[c.route]; if (!sites) return '';
+  const lastUse = {};
+  S.doses.filter((x) => x.cid === c.id && x.site).forEach((x) => { const k = x.date + x.time; if (!lastUse[x.site] || k > lastUse[x.site]) lastUse[x.site] = k; });
+  return [...sites].sort((a, b) => (lastUse[a] || '') < (lastUse[b] || '') ? -1 : (lastUse[a] || '') > (lastUse[b] || '') ? 1 : 0)[0];
+}
+function logDose(c, { amount = c.dose, site = isInj(c) ? suggestSite(c) : '', date = today(), time = nowTime(), note = '' } = {}) {
+  const dose = { id: uid(), cid: c.id, date, time, amount, unit: c.unit, site, note };
+  S.doses.push(dose);
+  if (c.supply !== '' && c.supply != null && +amount > 0) c.supply = Math.max(0, +c.supply - +amount);
+  save(); return dose;
+}
+function removeDose(id) {
+  const dose = S.doses.find((x) => x.id === id); if (!dose) return;
+  const c = compById(dose.cid);
+  if (c && c.supply !== '' && c.supply != null && +dose.amount > 0) c.supply = +c.supply + +dose.amount;
+  S.doses = S.doses.filter((x) => x.id !== id); save();
+}
+const kindColor = (k) => ({ peptide: 'var(--accent)', hormone: 'var(--red)', supplement: 'var(--ink)', medication: 'var(--steel)' })[k] || 'var(--label)';
+
+/* --- Today list --- */
+function protocolToday() {
+  const d = today();
+  const due = S.compounds.filter((c) => isDue(c, d));
+  const missed = S.compounds.map((c) => [c, missedOn(c)]).filter(([, m]) => m);
+  const soon = S.compounds.filter((c) => !c.paused && c.sched.type !== 'prn' && !isDue(c, d))
+    .map((c) => [c, nextDue(c, dateAdd(d, 1))]).filter(([, n]) => n && daysBetween(d, n) <= 6)
+    .sort((a, b) => (a[1] < b[1] ? -1 : 1));
+  const row = (c) => {
+    const taken = dosesOn(c.id, d);
+    const t = taken[taken.length - 1];
+    const sub = t
+      ? [`Taken ${t.time}`, doseText(c, t.amount), t.site].filter(Boolean).join(' · ')
+      : [doseText(c), c.route !== 'Oral' ? c.route : '', isInj(c) ? `Site: ${suggestSite(c)}` : '', drawText(c)].filter(Boolean).join(' · ');
+    return `<div class="dose-row${t ? ' done' : ''}" style="--k:${kindColor(c.kind)}">
+      <button class="dose-tick" data-act="${t ? 'untake' : 'quicklog'}" data-id="${c.id}" aria-label="${t ? 'Undo' : 'Log'} ${esc(c.name)}">${IC.check}</button>
+      <button class="dose-main" data-act="compound" data-id="${c.id}"><b>${esc(c.name)}</b><span>${esc(sub || c.time || '')}</span></button>
+    </div>`;
+  };
+  return `${due.length ? due.map(row).join('') : '<p class="muted small">Nothing scheduled today.</p>'}
+    ${missed.map(([c, m]) => `<p class="warn small missed">Missed ${esc(c.name)} on ${esc(fmtDate(m))}. <button class="link" data-act="logmissed" data-id="${c.id}" data-d="${m}">Log it</button></p>`).join('')}
+    ${soon.length ? `<p class="muted small soon">Coming up: ${soon.map(([c, n]) => `${esc(c.name)} ${DOW[dow(n)]}`).join(' · ')}</p>` : ''}`;
+}
+
+/* --- Bodyweight --- */
+function weightChart() {
+  const pts = [...S.weights].sort((a, b) => (a.date < b.date ? -1 : 1)).filter((x) => daysBetween(x.date, today()) <= 90);
+  if (pts.length < 2) return '<p class="muted small">Log at least two weigh-ins to see your trend.</p>';
+  const W = 320, H = 110, pad = 8;
+  const t0 = pts[0].date, span = Math.max(1, daysBetween(t0, pts[pts.length - 1].date));
+  const ws = pts.map((p) => +p.w), lo = Math.min(...ws), hi = Math.max(...ws), r = Math.max(1, hi - lo);
+  const x = (p) => pad + (daysBetween(t0, p.date) / span) * (W - 2 * pad);
+  const y = (p) => pad + (1 - (+p.w - lo) / r) * (H - 2 * pad);
+  // dose markers for injectables, so weight trend can be read against the protocol
+  const marks = S.doses.filter((d2) => { const c = compById(d2.cid); return c && isInj(c) && d2.date >= t0; })
+    .map((d2) => `<line x1="${x(d2)}" x2="${x(d2)}" y1="${H - 2}" y2="${H - 8}" stroke="${kindColor(compById(d2.cid).kind)}" stroke-width="2"/>`).join('');
+  return `<svg class="wchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Bodyweight trend">
+    ${marks}<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" points="${pts.map((p) => `${x(p)},${y(p)}`).join(' ')}"/>
+    ${pts.map((p) => `<circle cx="${x(p)}" cy="${y(p)}" r="3" fill="var(--ink)"/>`).join('')}</svg>
+    <div class="row between small muted"><span>${esc(fmtDate(t0))}</span><span>low ${fmtNum(lo)} · high ${fmtNum(hi)}</span></div>`;
+}
+function weightCard() {
+  const sorted = [...S.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const last = sorted[sorted.length - 1];
+  const ago = sorted.filter((x) => daysBetween(x.date, today()) >= 28).pop();
+  const delta = last && ago ? +last.w - +ago.w : null;
+  const u = S.settings.unit;
+  return `<section class="card">
+    <div class="row between"><h3>Bodyweight</h3>${last ? `<span class="big-num">${fmtNum(+last.w)} <small>${u}</small></span>` : ''}</div>
+    ${delta != null ? `<p class="small ${delta <= 0 ? 'hint' : 'muted'}">${delta > 0 ? '+' : ''}${fmtNum(delta)} ${u} over 4 weeks</p>` : ''}
+    ${weightChart()}
+    <form class="row wform" data-act="logweight"><input name="w" inputmode="decimal" placeholder="Today's weight (${u})" required><button class="btn ghost">Log</button></form>
+    <p class="muted small">Your latest weigh-in also updates your Fuel targets. Ticks under the chart mark injection days.</p>
+  </section>`;
+}
+
+/* --- Stack view --- */
+let stackTab = 'protocol';
+V.stack = () => `
+  <header class="top"><h1>Stack</h1></header>
+  <div class="seg">${[['protocol', 'My protocol'], ['guide', 'Supplement guide']].map(([k, n]) => `<button class="${stackTab === k ? 'on' : ''}" data-act="stacktab" data-k="${k}">${n}</button>`).join('')}</div>
+  ${stackTab === 'protocol' ? V.protocol() : V.guide()}`;
+
+V.protocol = () => `
+  <section class="card" style="margin-top:14px"><div class="row between"><h3>Today</h3><span class="muted small">${esc(fmtDate(today()))}</span></div>${protocolToday()}</section>
+  ${S.compounds.length ? `<div class="kicker pad">Compounds</div>` : ''}
+  ${S.compounds.map((c) => {
+    const nd = nextDue(c), ad = adherence(c), rw = runwayDays(c);
+    return `<button class="card comp" data-act="compound" data-id="${c.id}" style="--k:${kindColor(c.kind)}">
+      <div class="row between"><span class="kicker">${esc((KINDS.find(([k]) => k === c.kind) || ['', ''])[1])}${c.paused ? ' · Paused' : ''}</span>${ad != null ? `<span class="badge ${ad >= 80 ? 'ok' : 'wait'}">${ad}%</span>` : ''}</div>
+      <h3>${esc(c.name)}</h3>
+      <p class="muted small">${esc([doseText(c), c.route, schedText(c)].filter(Boolean).join(' · '))}</p>
+      <div class="stats">
+        <div><span>Next</span><b>${c.paused ? 'Paused' : nd ? (nd === today() ? 'Today' : esc(fmtShort(nd))) : '—'}</b></div>
+        <div><span>Supply</span><b>${rw != null ? (rw < 7 ? `<i class="warn">${rw} days</i>` : `${Math.round(rw / 7)} wks`) : c.supply !== '' && c.supply != null ? `${fmtNum(+c.supply)} ${esc(c.unit)}` : '—'}</b></div>
+        <div><span>Last</span><b>${lastDose(c.id) ? esc(fmtShort(lastDose(c.id).date)) : '—'}</b></div>
+      </div>
+    </button>`;
+  }).join('')}
+  <button class="btn" data-act="newcompound">+ Add compound</button>
+  <div class="kicker pad">Metrics</div>
+  ${weightCard()}
+  <button class="btn ghost" data-act="summary">Export summary for your doctor</button>
+  <p class="muted small pad">IRON77 tracks what you enter. It doesn't recommend doses. Keep whoever prescribes your protocol in the loop, and get bloodwork on a regular schedule.</p>`;
+
+V.guide = () => {
+  const list = SUPPLEMENTS.filter((s) => stackFilter === 'all' || (stackFilter === 'era' ? s.era : !s.era));
+  return `
+  <p class="muted pad">What the golden-era champions took, checked against what current research supports.</p>
+  <div class="seg pad">${[['all', 'All'], ['era', 'Golden Era'], ['modern', 'Modern']].map(([k, n]) => `<button class="${stackFilter === k ? 'on' : ''}" data-act="stackfilter" data-k="${k}">${n}</button>`).join('')}</div>
+  ${list.map((s) => `<section class="card">
+    <div class="row between"><span class="kicker">${s.era ? 'Golden era' : 'Modern'} · ${esc(s.who)}</span></div>
+    <h3>${esc(s.name)}</h3>
+    <p>${esc(s.purpose)}</p>
+    <p class="muted small">${evBadge(s.evidence)} ${esc(s.note)}</p>
+    <label class="check"><input type="checkbox" data-act="togglestack" data-id="${s.id}" ${S.compounds.some((c) => c.guide === s.id) ? 'checked' : ''}><span>In my protocol</span></label>
+  </section>`).join('')}
+  <p class="muted small pad">This is not medical advice. Check with a doctor before starting supplements, especially if you take medication.</p>`;
+};
+
+/* --- Sheets --- */
+function compoundForm(c) {
+  const isNew = !c;
+  c ||= { name: '', kind: 'peptide', dose: '', unit: 'mg', route: 'SubQ', sched: { type: 'interval', every: 7 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '' };
+  const sk = c.sched.type === 'prn' ? 'prn' : c.sched.type === 'weekdays' ? 'wd' : ['1', '2', '3', '7', '14'].includes(String(c.sched.every)) ? String(c.sched.every) : 'n';
+  const opt = (arr, v) => arr.map((o) => { const [val, label] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(val)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(label)}</option>`; }).join('');
+  return `<h2>${isNew ? 'Add compound' : 'Edit compound'}</h2>
+  <form class="cform" data-act="savecompound" data-id="${c.id || ''}" data-sched="${sk}" data-mix="${c.mix?.type || 'none'}" data-route="${esc(c.route)}">
+    <label>Name<input name="name" value="${esc(c.name)}" placeholder="e.g. Testosterone cypionate" required></label>
+    <label>Type<select name="kind">${opt(KINDS, c.kind)}</select></label>
+    <div class="grid2"><label>Dose<input name="dose" inputmode="decimal" value="${esc(c.dose)}" placeholder="Amount"></label>
+      <label>Unit<select name="unit">${opt(UNITS, c.unit)}</select></label></div>
+    <div class="grid2"><label>Route<select name="route" data-act="formsync">${opt(ROUTES, c.route)}</select></label>
+      <label>Time<input name="time" type="time" value="${esc(c.time || '08:00')}"></label></div>
+    <label>Schedule<select name="sched" data-act="formsync">${opt(SCHEDS, sk)}</select></label>
+    <div class="f-wd wdays">${DOW.map((n, i) => `<label class="wd"><input type="checkbox" name="days" value="${i}" ${c.sched.type === 'weekdays' && c.sched.days.includes(i) ? 'checked' : ''}><span>${n}</span></label>`).join('')}</div>
+    <label class="f-n">Every how many days?<input name="every" inputmode="numeric" value="${esc(c.sched.type === 'interval' ? c.sched.every : 4)}"></label>
+    <div class="grid2"><label>Start<input name="start" type="date" value="${esc(c.start)}" required></label>
+      <label>End (optional)<input name="end" type="date" value="${esc(c.end || '')}"></label></div>
+    <fieldset class="f-inj"><legend>Syringe maths (optional)</legend>
+      <label>Concentration<select name="mixtype" data-act="formsync">${opt([['none', 'Skip'], ['premix', 'Pre-mixed (e.g. oil)'], ['recon', 'Reconstituted vial']], c.mix?.type || 'none')}</select></label>
+      <label class="f-premix">Strength per ml<input name="conc" inputmode="decimal" value="${esc(c.mix?.conc || '')}" placeholder="e.g. 200 (in your dose unit per ml)"></label>
+      <div class="grid2 f-recon"><label>Amount in vial<input name="vial" inputmode="decimal" value="${esc(c.mix?.vial || '')}" placeholder="e.g. 10"></label>
+        <label>Water added (ml)<input name="water" inputmode="decimal" value="${esc(c.mix?.water || '')}" placeholder="e.g. 2"></label></div>
+    </fieldset>
+    <div class="grid2"><label>On hand (dose unit)<input name="supply" inputmode="decimal" value="${esc(c.supply ?? '')}" placeholder="e.g. 40"></label>
+      <label>Per vial / bottle<input name="perVial" inputmode="decimal" value="${esc(c.perVial ?? '')}" placeholder="e.g. 10"></label></div>
+    <label>Notes<input name="notes" value="${esc(c.notes || '')}" placeholder="Optional"></label>
+    <button class="btn">${isNew ? 'Add to protocol' : 'Save changes'}</button>
+    ${isNew ? '' : `<button type="button" class="btn ghost danger" data-act="delcompound" data-id="${c.id}">Delete compound and its log</button>`}
+  </form>`;
+}
+
+function compoundSheet(id) {
+  const c = compById(id); if (!c) return '';
+  const nd = nextDue(c), ad = adherence(c), rw = runwayDays(c);
+  const strip = Array.from({ length: 28 }, (_, i) => {
+    const d = dateAdd(today(), i - 27), due = isDue(c, d), taken = dosesOn(c.id, d).length > 0;
+    const cls = taken ? 'hit' : due && d < today() ? 'miss' : due ? 'due' : '';
+    return `<i class="${cls}" title="${esc(fmtDate(d))}"></i>`;
+  }).join('');
+  const recent = S.doses.filter((x) => x.cid === c.id).sort((a, b) => (a.date + a.time < b.date + b.time ? 1 : -1)).slice(0, 10);
+  const sites = SITES[c.route];
+  const sug = suggestSite(c);
+  return `<div class="kicker">${esc((KINDS.find(([k]) => k === c.kind) || ['', ''])[1])} · ${esc(c.route)}</div>
+    <h2>${esc(c.name)}</h2>
+    <p class="muted">${esc([doseText(c), schedText(c), c.time].filter(Boolean).join(' · '))}</p>
+    ${drawText(c) ? `<p class="hint small">${esc(drawText(c))}</p>` : ''}
+    <div class="stats">
+      <div><span>Next</span><b>${c.paused ? 'Paused' : nd ? (nd === today() ? 'Today' : esc(fmtShort(nd))) : '—'}</b></div>
+      <div><span>28-day</span><b>${ad != null ? ad + '%' : '—'}</b></div>
+      <div><span>Supply</span><b>${c.supply !== '' && c.supply != null ? `${fmtNum(+c.supply)} ${esc(c.unit)}` : '—'}${rw != null ? `<em>${rw} days</em>` : ''}</b></div>
+    </div>
+    <h4>Last 4 weeks</h4><div class="strip">${strip}</div>
+    <p class="muted small legend-row"><i class="hit"></i> taken <i class="miss"></i> missed <i class="due"></i> due</p>
+    <h4>Log a dose</h4>
+    <form class="cform" data-act="logdose" data-id="${c.id}">
+      <div class="grid2"><label>Amount (${esc(c.unit || 'dose')})<input name="amount" inputmode="decimal" value="${esc(c.dose)}"></label>
+        ${sites ? `<label>Site<select name="site">${sites.map((s) => `<option ${s === sug ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>` : '<span></span>'}</div>
+      <div class="grid2"><label>Date<input name="date" type="date" value="${today()}"></label><label>Time<input name="time" type="time" value="${nowTime()}"></label></div>
+      <label>Note<input name="note" placeholder="Optional: how you felt, side effects…"></label>
+      <button class="btn">Log dose</button>
+    </form>
+    ${recent.length ? `<h4>History</h4><div class="card list inset">${recent.map((x) => `<div class="exrow"><span>${esc(fmtDate(x.date))} ${esc(x.time)}<em> · ${esc([doseText(c, x.amount), x.site, x.note].filter(Boolean).join(' · '))}</em></span><button class="x" data-act="deldose" data-id="${x.id}" data-c="${c.id}" aria-label="Delete dose">×</button></div>`).join('')}</div>` : ''}
+    <div class="stack-btns">
+      ${+c.perVial > 0 ? `<button class="btn ghost" data-act="addvial" data-id="${c.id}">+ Add vial / bottle (+${fmtNum(+c.perVial)} ${esc(c.unit)})</button>` : ''}
+      ${c.sched.type !== 'prn' ? `<button class="btn ghost" data-act="ics" data-id="${c.id}">Add reminders to my calendar</button>` : ''}
+      <button class="btn ghost" data-act="editcompound" data-id="${c.id}">Edit</button>
+      <button class="btn ghost" data-act="pausecompound" data-id="${c.id}">${c.paused ? 'Resume' : 'Pause'}</button>
+    </div>
+    ${c.notes ? `<p class="muted small">${esc(c.notes)}</p>` : ''}`;
+}
+
+function saveCompound(form) {
+  const f = new FormData(form);
+  const g = (k) => String(f.get(k) ?? '').trim();
+  const sk = g('sched');
+  const sched = sk === 'prn' ? { type: 'prn' } : sk === 'wd' ? { type: 'weekdays', days: f.getAll('days').map(Number) } : { type: 'interval', every: Math.max(1, parseInt(sk === 'n' ? g('every') : sk, 10) || 1) };
+  if (sched.type === 'weekdays' && !sched.days.length) { toast('Pick at least one day.'); return; }
+  const data = {
+    name: g('name'), kind: g('kind'), dose: g('dose'), unit: g('unit'), route: g('route'), sched, time: g('time') || '08:00',
+    start: g('start') || today(), end: g('end'),
+    mix: { type: g('mixtype') || 'none', conc: g('conc'), vial: g('vial'), water: g('water') },
+    supply: g('supply') === '' ? '' : +g('supply'), perVial: g('perVial') === '' ? '' : +g('perVial'), notes: g('notes'),
+  };
+  if (!data.name) return;
+  const id = form.dataset.id;
+  if (id) Object.assign(compById(id), data); else S.compounds.push({ id: uid(), ...data });
+  save(); closeSheet(); render(); toast(id ? 'Saved.' : `${data.name} added to your protocol.`);
+}
+
+function icsFor(c) {
+  const [hh, mm] = (c.time || '08:00').split(':');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+  let rule = c.sched.type === 'weekdays'
+    ? 'FREQ=WEEKLY;BYDAY=' + c.sched.days.map((d) => ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'][d]).join(',')
+    : 'FREQ=DAILY;INTERVAL=' + c.sched.every;
+  if (c.end) rule += ';UNTIL=' + c.end.replace(/-/g, '') + 'T235959';
+  const start = c.sched.type === 'weekdays' ? nextDue({ ...c, paused: false }, c.start) || c.start : c.start;
+  const title = `${c.name}${doseText(c) ? ' ' + doseText(c) : ''}`.replace(/[,;\\]/g, ' ');
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//IRON77//Protocol//EN', 'BEGIN:VEVENT',
+    `UID:${c.id}@iron77`, `DTSTAMP:${stamp}`, `DTSTART:${start.replace(/-/g, '')}T${hh}${mm}00`, 'DURATION:PT10M', `RRULE:${rule}`,
+    `SUMMARY:${title}`, 'DESCRIPTION:Logged in IRON77', 'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+
+function summaryText() {
+  const from = dateAdd(today(), -89);
+  const lines = [`IRON77 protocol summary`, `Generated ${fmtDate(today())} · covers ${fmtDate(from)} to ${fmtDate(today())}`, ''];
+  for (const c of S.compounds) {
+    const ds = S.doses.filter((x) => x.cid === c.id && x.date >= from);
+    lines.push(`${c.name}${c.paused ? ' (paused)' : ''}`);
+    lines.push(`  ${[doseText(c), c.route, schedText(c)].filter(Boolean).join(', ')} · since ${fmtDate(c.start)}${c.end ? ' until ' + fmtDate(c.end) : ''}`);
+    const ad = adherence(c, 90);
+    lines.push(`  Doses logged: ${ds.length}${ad != null ? ` · adherence ${ad}%` : ''}${ds.length ? ` · last ${fmtDate(ds.map((x) => x.date).sort().pop())}` : ''}`);
+    const notes = ds.filter((x) => x.note).slice(-5);
+    if (notes.length) lines.push(...notes.map((x) => `  Note ${fmtDate(x.date)}: ${x.note}`));
+    lines.push('');
+  }
+  const ws = [...S.weights].filter((x) => x.date >= from).sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (ws.length >= 2) {
+    const d = +ws[ws.length - 1].w - +ws[0].w;
+    lines.push(`Bodyweight: ${ws[0].w} → ${ws[ws.length - 1].w} ${S.settings.unit} (${d > 0 ? '+' : ''}${fmtNum(d)}) from ${fmtDate(ws[0].date)} to ${fmtDate(ws[ws.length - 1].date)}`);
+  }
+  return lines.join('\n');
+}
+
+const syncForm = (form) => {
+  form.dataset.sched = form.elements.sched.value;
+  form.dataset.mix = form.elements.mixtype.value;
+  form.dataset.route = form.elements.route.value;
+};
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  const d = el.dataset; const c = d.id && compById(d.id);
+  switch (d.act) {
+    case 'stacktab': stackTab = d.k; render(); break;
+    case 'newcompound': openSheet(compoundForm()); break;
+    case 'compound': openSheet(compoundSheet(d.id)); break;
+    case 'editcompound': openSheet(compoundForm(c)); break;
+    case 'quicklog': {
+      const dose = logDose(c); render();
+      toast(`Logged ${c.name}${dose.site ? ' · ' + dose.site : ''}`); break;
+    }
+    case 'untake': { const t = dosesOn(c.id, today()).pop(); if (t) { removeDose(t.id); render(); toast(`Undid ${c.name}.`); } break; }
+    case 'logmissed': logDose(c, { date: d.d, time: c.time || '08:00' }); render(); toast(`Logged ${c.name} for ${fmtDate(d.d)}.`); break;
+    case 'deldose': if (confirm('Delete this dose from your log?')) { removeDose(d.id); openSheet(compoundSheet(d.c)); render(); } break;
+    case 'addvial': c.supply = (+c.supply || 0) + +c.perVial; save(); openSheet(compoundSheet(c.id)); render(); toast('Supply updated.'); break;
+    case 'pausecompound': c.paused = !c.paused; save(); openSheet(compoundSheet(c.id)); render(); break;
+    case 'delcompound':
+      if (confirm(`Delete ${c.name} and all its logged doses?`)) { S.compounds = S.compounds.filter((x) => x.id !== c.id); S.doses = S.doses.filter((x) => x.cid !== c.id); save(); closeSheet(); render(); }
+      break;
+    case 'ics': {
+      const blob = new Blob([icsFor(c)], { type: 'text/calendar' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${c.name.replace(/[^\w]+/g, '-')}-reminders.ics`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast('Open the file to add repeating reminders to your calendar.'); break;
+    }
+    case 'summary': {
+      const txt = summaryText();
+      openSheet(`<h2>Protocol summary</h2><p class="muted small">Last 90 days. Share it or copy it into a message to your doctor.</p>
+        <textarea class="summary" readonly>${esc(txt)}</textarea>
+        <div class="stack-btns">${navigator.share ? '<button class="btn" data-act="sharesum">Share</button>' : ''}<button class="btn ghost" data-act="copysum">Copy</button></div>`);
+      break;
+    }
+    case 'sharesum': navigator.share({ title: 'IRON77 protocol summary', text: summaryText() }).catch(() => {}); break;
+    case 'copysum': navigator.clipboard?.writeText(summaryText()).then(() => toast('Copied.'), () => toast('Select the text and copy it.')); break;
+  }
+});
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.dataset.act === 'formsync') syncForm(el.form);
+  if (el.dataset.act === 'togglestack') {
+    const sup = SUPPLEMENTS.find((x) => x.id === el.dataset.id);
+    if (el.checked) S.compounds.push({ id: uid(), guide: sup.id, name: sup.name, kind: 'supplement', dose: '', unit: '', route: 'Oral', sched: { type: 'interval', every: 1 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '' });
+    else { const ids = S.compounds.filter((c) => c.guide === sup.id).map((c) => c.id); S.compounds = S.compounds.filter((c) => !ids.includes(c.id)); S.doses = S.doses.filter((x) => !ids.includes(x.cid)); }
+    save(); toast(el.checked ? `${sup.name} added to My protocol.` : `${sup.name} removed.`);
+  }
+});
+document.addEventListener('submit', (ev) => {
+  const form = ev.target; const act = form.dataset.act;
+  if (act === 'savecompound') { ev.preventDefault(); saveCompound(form); }
+  else if (act === 'logdose') {
+    ev.preventDefault();
+    const c = compById(form.dataset.id); const f = new FormData(form);
+    logDose(c, { amount: String(f.get('amount') || '').trim(), site: String(f.get('site') || ''), date: f.get('date') || today(), time: f.get('time') || nowTime(), note: String(f.get('note') || '').trim() });
+    openSheet(compoundSheet(c.id)); render(); toast(`Logged ${c.name}.`);
+  } else if (act === 'logweight') {
+    ev.preventDefault();
+    const w = parseFloat(new FormData(form).get('w'));
+    if (!(w > 0)) return;
+    S.weights = S.weights.filter((x) => x.date !== today()); S.weights.push({ date: today(), w });
+    S.settings.bodyweight = w; save(); render(); toast('Weigh-in logged.');
+  }
+});
+
 /* ---------- render & routing ---------- */
 function render() {
   $('#view').innerHTML = (V[view] || V.today)(viewArg);
@@ -577,12 +957,6 @@ document.addEventListener('change', (ev) => {
   if (d.act === 'equip') {
     S.equipment = el.checked ? [...new Set([...S.equipment, d.k])] : S.equipment.filter((x) => x !== d.k);
     S.equipSet = true; save();
-  } else if (d.act === 'takesupp') {
-    const arr = (S.stackLog[today()] ||= []);
-    if (el.checked) { if (!arr.includes(d.id)) arr.push(d.id); } else S.stackLog[today()] = arr.filter((x) => x !== d.id);
-    save();
-  } else if (d.act === 'togglestack') {
-    S.stack = el.checked ? [...new Set([...S.stack, d.id])] : S.stack.filter((x) => x !== d.id); save();
   } else if (d.act === 'setting') {
     const v = parseFloat(el.value); if (!isNaN(v) && v > 0) { S.settings[d.k] = v; save(); render(); }
   } else if (d.act === 'setval') {
