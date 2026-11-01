@@ -199,7 +199,7 @@ V.today = () => {
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
   return `
-  <header class="top"><div><div class="brand">IRON<span>77</span></div><h1>${greet}</h1><div class="muted">${esc(fmtDate(today()))}</div></div>
+  <header class="top"><div><div class="brand"><b>I<span>77</span></b>IRON77</div><h1>${greet}</h1><div class="muted">${esc(fmtDate(today()))}</div></div>
     <button class="icon" data-act="go" data-v="settings" aria-label="Settings">${IC.gear}</button></header>
   <p class="creed">“${esc(creed)}”</p>
 

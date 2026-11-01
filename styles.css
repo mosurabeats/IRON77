@@ -30,9 +30,9 @@ h2 { font-size: 25px; line-height: 1.15; margin: 6px 0 4px; }
 h3 { font-family: var(--mono); font-size: 15px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -.01em; }
 h4 { font-size: 11px; font-weight: 500; color: var(--label); text-transform: uppercase; letter-spacing: .12em; margin: 18px 0 4px; }
 p { margin: 6px 0; }
-.brand { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 14px; letter-spacing: .04em; color: var(--ink); }
-.brand span { color: var(--accent); }
-.brand::after { content: ''; width: 28px; height: 6px; background: var(--stripes); border-radius: 1px; }
+.brand { display: inline-flex; align-items: baseline; gap: 10px; font: 500 11px var(--mono); letter-spacing: .2em; color: var(--label); }
+.brand b { font: 400 20px var(--display); font-style: italic; letter-spacing: -.02em; color: var(--ink); }
+.brand b span { color: var(--accent); }
 .kicker { font-size: 11px; font-weight: 500; color: var(--label); text-transform: uppercase; letter-spacing: .12em; }
 .muted { color: var(--label); }
 .small { font-size: 12.5px; }
