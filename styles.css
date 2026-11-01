@@ -146,8 +146,6 @@ details summary { list-style: none; display: flex; justify-content: space-betwee
 details summary::-webkit-details-marker { display: none; }
 .chev { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--well); font-size: 18px; color: var(--welltext); transition: transform .2s; flex: none; }
 details[open] .chev { transform: rotate(45deg); background: var(--solid); color: var(--solidtext); }
-.legend .kicker { color: var(--accent); }
-.legend h3 { font-family: var(--display); font-weight: 400; font-size: 18px; }
 .log .small { padding: 8px 0; border-top: 1px solid var(--line); gap: 12px; }
 .log .small span:last-child { color: var(--label); text-align: right; }
 .log[open] summary { margin-bottom: 10px; }

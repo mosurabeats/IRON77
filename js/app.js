@@ -381,18 +381,6 @@ V.fuel = () => {
 };
 
 let stackFilter = 'all';
-V.legends = () => `
-  <header class="top"><h1>Legends</h1></header>
-  <p class="muted pad">Many champions of this era also used anabolic steroids. The training and eating principles below are what translate to natural lifters.</p>
-  ${LEGENDS.map((l) => `<details class="card legend">
-    <summary><div><div class="kicker">${esc(l.nick)} · ${esc(l.years)}</div><h3>${esc(l.name)}</h3></div><span class="chev">+</span></summary>
-    <ul class="titles">${l.titles.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    <h4>Philosophy</h4><p>${esc(l.philosophy)}</p>
-    <h4>Training</h4><p>${esc(l.training)}</p>
-    <h4>Diet</h4><p>${esc(l.diet)}</p>
-    <button class="btn ghost" data-act="go" data-v="program" data-arg="${l.program}">Train in his style</button>
-  </details>`).join('')}`;
-
 const exRows = (onclick) => {
   const groups = {};
   for (const [n, e] of Object.entries(EXERCISES)) (groups[e[0]] ||= []).push(n);
