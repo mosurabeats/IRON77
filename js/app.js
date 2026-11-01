@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '17'; // keep in step with VERSION in sw.js
+const APP_VERSION = '18'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -437,7 +437,7 @@ function demoSheet(name, ei) {
   return `
     <div class="kicker">${e ? esc(e[0]) : 'Custom exercise'}${e && e[1].length ? ' · ' + esc(e[1].map(equipName).join(', ')) : e ? ' · Bodyweight' : ''}</div>
     <h2>${esc(name)}</h2>
-    ${EX_DEMO[name] ? `<div class="demo${S.settings.demoDark ? ' dark' : ''}">
+    ${EX_DEMO[name] ? `<div class="demo${S.settings.demoDark !== false ? ' dark' : ''}">
       <img src="${DEMO_BASE}${EX_DEMO[name]}.gif" alt="${esc(name)} animated demonstration" onerror="this.parentNode.classList.add('nodemo')">
       <span class="demo-off">Demo unavailable right now. Open it once with signal, or save demos in Settings.</span>
     </div><p class="muted small credit">Animation: ExerciseDB</p>` : ''}
@@ -506,7 +506,7 @@ V.settings = () => `
   <section class="card">
     <div class="kicker">Exercise demos</div>
     <p class="muted small">Animations load when you open an exercise and are kept for offline use. Save them all now so they work at the gym without signal (about 6 MB).</p>
-    <div class="seg">${[[false, 'Light background'], [true, 'Dark background']].map(([v, n]) => `<button class="${!!S.settings.demoDark === v ? 'on' : ''}" data-act="demobg" data-v="${v}">${n}</button>`).join('')}</div>
+    <div class="seg">${[[false, 'Light background'], [true, 'Dark background']].map(([v, n]) => `<button class="${(S.settings.demoDark !== false) === v ? 'on' : ''}" data-act="demobg" data-v="${v}">${n}</button>`).join('')}</div>
     <button class="btn ghost" data-act="savedemos">Save all demos for offline</button>
   </section>
   <section class="card">
