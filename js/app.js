@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '16'; // keep in step with VERSION in sw.js
+const APP_VERSION = '17'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -437,11 +437,10 @@ function demoSheet(name, ei) {
   return `
     <div class="kicker">${e ? esc(e[0]) : 'Custom exercise'}${e && e[1].length ? ' · ' + esc(e[1].map(equipName).join(', ')) : e ? ' · Bodyweight' : ''}</div>
     <h2>${esc(name)}</h2>
-    ${EX_DEMO[name] ? `<div class="demo" aria-label="${esc(name)} demonstration, start and finish positions">
-      <img src="${DEMO_BASE}${EX_DEMO[name]}/0.jpg" alt="${esc(name)}: start position" loading="eager" onerror="this.parentNode.classList.add('nodemo')">
-      <img src="${DEMO_BASE}${EX_DEMO[name]}/1.jpg" alt="${esc(name)}: finish position" class="f2" onerror="this.parentNode.classList.add('nodemo')">
-      <span class="demo-off">Demo unavailable offline. Open once with signal, or save demos in Settings.</span>
-    </div><p class="muted small credit">Demo photos: free-exercise-db</p>` : ''}
+    ${EX_DEMO[name] ? `<div class="demo${S.settings.demoDark ? ' dark' : ''}">
+      <img src="${DEMO_BASE}${EX_DEMO[name]}.gif" alt="${esc(name)} animated demonstration" onerror="this.parentNode.classList.add('nodemo')">
+      <span class="demo-off">Demo unavailable right now. Open it once with signal, or save demos in Settings.</span>
+    </div><p class="muted small credit">Animation: ExerciseDB</p>` : ''}
     ${miss.length ? `<p class="warn small">Your gym doesn't have: ${esc(miss.map(equipName).join(', '))}</p>` : ''}
     ${e ? `<h4>How to do it</h4><ol class="cues">${e[3].map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}
     <h4>Watch</h4>
@@ -506,7 +505,8 @@ V.settings = () => `
   </section>
   <section class="card">
     <div class="kicker">Exercise demos</div>
-    <p class="muted small">Demos load when you open an exercise and are kept for offline use. Save them all now so they work at the gym without signal (about 7 MB).</p>
+    <p class="muted small">Animations load when you open an exercise and are kept for offline use. Save them all now so they work at the gym without signal (about 6 MB).</p>
+    <div class="seg">${[[false, 'Light background'], [true, 'Dark background']].map(([v, n]) => `<button class="${!!S.settings.demoDark === v ? 'on' : ''}" data-act="demobg" data-v="${v}">${n}</button>`).join('')}</div>
     <button class="btn ghost" data-act="savedemos">Save all demos for offline</button>
   </section>
   <section class="card">
@@ -1245,23 +1245,26 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     location.reload();
   });
 }
-const DEMO_CACHE = 'iron77-demos';
+const DEMO_CACHE = 'iron77-demo-gifs';
 async function saveDemos(btn) {
   if (!('caches' in window)) { toast('Offline saving isn\u2019t supported in this browser.'); return; }
-  const urls = [...new Set(Object.values(EX_DEMO))].flatMap((id) => [0, 1].map((n) => `${DEMO_BASE}${id}/${n}.jpg`));
+  const urls = [...new Set(Object.values(EX_DEMO))].map((id) => `${DEMO_BASE}${id}.gif`);
   const cache = await caches.open(DEMO_CACHE);
   let done = 0, failed = 0;
   btn.disabled = true;
   for (let i = 0; i < urls.length; i += 6) {
     await Promise.all(urls.slice(i, i + 6).map(async (u) => {
-      try { if (!(await cache.match(u))) { const r = await fetch(u, { mode: 'cors' }); if (!r.ok) throw 0; await cache.put(u, r); } done++; } catch { failed++; }
+      try { if (!(await cache.match(u))) { const r = await fetch(u, { mode: 'no-cors' }); if (!(r.type === 'opaque' || r.ok)) throw 0; await cache.put(u, r); } done++; } catch { failed++; }
     }));
     btn.textContent = `Saving\u2026 ${done + failed}/${urls.length}`;
   }
   btn.disabled = false; btn.textContent = 'Save all demos for offline';
-  toast(failed ? `Saved ${done} of ${urls.length}. Try again with better signal.` : `All ${urls.length} demo photos saved for offline.`);
+  toast(failed ? `Saved ${done} of ${urls.length}. Try again with better signal.` : `All ${urls.length} demo animations saved for offline.`);
 }
-document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-act="savedemos"]'); if (b) saveDemos(b); });
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-act="savedemos"]'); if (b) saveDemos(b);
+  const bg = ev.target.closest('[data-act="demobg"]'); if (bg) { S.settings.demoDark = bg.dataset.v === 'true'; save(); render(); }
+});
 async function forceUpdate() {
   toast('Checking for updates…');
   try {

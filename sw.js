@@ -1,10 +1,10 @@
 // Offline support. Network-first for the app's own files, always revalidating with the
 // server (bypassing the browser's HTTP cache) so updates arrive as soon as they're online.
 // Falls back to the saved copy when offline. Bump VERSION on every release.
-const VERSION = '16';
+const VERSION = '17';
 const CACHE = 'iron77-v' + VERSION;
-const DEMO_CACHE = 'iron77-demos'; // exercise demo photos, kept across releases
-const DEMO_HOST = 'raw.githubusercontent.com';
+const DEMO_CACHE = 'iron77-demo-gifs'; // exercise demo animations, kept across releases
+const DEMO_HOST = 'static.exercisedb.dev';
 const FILES = ['./', 'index.html', 'styles.css', 'js/data.js', 'js/app.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-32.png', 'icons/icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -20,8 +20,9 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.host === DEMO_HOST) {
-    // Demo photos rarely change: serve from cache, fetch and keep on first view.
-    e.respondWith(caches.open(DEMO_CACHE).then((c) => c.match(req.url).then((hit) => hit || fetch(req.url, { mode: 'cors' }).then((res) => { if (res.ok) c.put(req.url, res.clone()); return res; }))));
+    // Demo animations rarely change: serve from cache, fetch and keep on first view.
+    // The host doesn't send CORS headers, so these are opaque responses (fine for <img>).
+    e.respondWith(caches.open(DEMO_CACHE).then((c) => c.match(req.url).then((hit) => hit || fetch(req.url, { mode: 'no-cors' }).then((res) => { if (res.type === 'opaque' || (res.ok && (res.headers.get('content-type') || '').startsWith('image/'))) c.put(req.url, res.clone()); return res; }))));
     return;
   }
   const sameOrigin = url.origin === location.origin;
