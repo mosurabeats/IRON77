@@ -3,6 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
+const APP_VERSION = '11'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -479,6 +480,11 @@ V.settings = () => `
     <div class="row between"><h3>Reconstitution & dose calculator</h3>${IC.arrow}</div>
     <p class="muted small">Vial + water + dose → how many units to draw.</p>
   </button>
+  <section class="card">
+    <div class="row between"><div class="kicker">App version</div><span class="badge">v${APP_VERSION}</span></div>
+    <p class="muted small">IRON77 updates itself when you open it with signal. If something looks out of date, force a refresh. Your logs aren't affected.</p>
+    <button class="btn ghost" data-act="forceupdate">Check for updates</button>
+  </section>
   <section class="card">
     <div class="kicker">Your data</div>
     <p class="muted small">Everything is stored on this device only. Export a backup now and then.</p>
@@ -1170,5 +1176,33 @@ document.addEventListener('submit', (ev) => {
 
 if (S.current) view = 'session';
 render();
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+/* ---------- updates ---------- */
+// The installed app checks for a new version whenever it comes back to the foreground
+// (iOS resumes home-screen apps instead of restarting them), and reloads once it lands.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    const check = () => reg.update().catch(() => {});
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    setInterval(check, 15 * 60 * 1000);
+  }).catch(() => {});
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloading) return;
+    reloading = true;
+    if (S.current) { toast('IRON77 updated. The new version loads next time you open the app.'); return; }
+    location.reload();
+  });
+}
+async function forceUpdate() {
+  toast('Checking for updates…');
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations()) || [];
+    await Promise.all(regs.map((r) => r.unregister()));
+    const keys = (await caches?.keys()) || [];
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  } catch {}
+  location.reload();
+}
+document.addEventListener('click', (ev) => { if (ev.target.closest('[data-act="forceupdate"]')) forceUpdate(); });
 })();
