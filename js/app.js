@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '14'; // keep in step with VERSION in sw.js
+const APP_VERSION = '15'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -240,7 +240,8 @@ V.today = () => {
   <p class="creed">“${esc(creed)}”</p>
 
   ${S.current ? `<section class="card hot"><div class="kicker">In progress</div><h2>${esc(S.current.dayName)}</h2>
-    <button class="btn" data-act="go" data-v="session">Resume Workout</button></section>` : ''}
+    <button class="btn" data-act="go" data-v="session">Resume Workout</button>
+    <button class="btn ghost danger" data-act="discard">Discard Workout</button></section>` : ''}
 
   <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
@@ -315,7 +316,8 @@ V.session = () => {
   const unit = S.settings.unit;
   return `
   <header class="top"><div><div class="kicker">${esc(prog.name)}</div><h1 class="sm">${esc(c.dayName)}</h1></div>
-    <button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button></header>
+    <div class="row"><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
+    <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
   ${c.exercises.map((ex, ei) => {
     const last = lastPerformance(ex.name);
     const top = upperReps(ex.reps);
@@ -407,6 +409,20 @@ function openSheet(html) {
   sh.hidden = false; document.body.classList.add('locked');
   sh.querySelector('.sheet-body').scrollTop = 0;
 }
+let pendingAsk = null;
+function ask(message, okLabel, onOk) {
+  pendingAsk = onOk;
+  openSheet(`<p class="askq">${esc(message)}</p>
+    <div class="stack-btns"><button class="btn danger-solid" data-act="askok">${esc(okLabel)}</button>
+    <button class="btn ghost" data-act="askcancel">Cancel</button></div>`);
+}
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act="askok"],[data-act="askcancel"]'); if (!el) return;
+  ev.stopPropagation();
+  const fn = el.dataset.act === 'askok' ? pendingAsk : null;
+  pendingAsk = null; closeSheet();
+  if (fn) fn();
+}, true);
 function closeSheet() { $('#sheet').hidden = true; document.body.classList.remove('locked'); }
 
 function demoSheet(name, ei) {
@@ -892,11 +908,11 @@ document.addEventListener('click', (ev) => {
     }
     case 'untake': { const t = dosesOn(c.id, today()).pop(); if (t) { removeDose(t.id); render(); toast(`Undid ${c.name}.`); } break; }
     case 'logmissed': logDose(c, { date: d.d, time: c.time || '08:00' }); render(); toast(`Logged ${c.name} for ${fmtDate(d.d)}.`); break;
-    case 'deldose': if (confirm('Delete this dose from your log?')) { removeDose(d.id); openSheet(compoundSheet(d.c)); render(); } break;
+    case 'deldose': ask('Delete this dose from your log?', 'Delete dose', () => { removeDose(d.id); render(); openSheet(compoundSheet(d.c)); }); break;
     case 'addvial': c.supply = (+c.supply || 0) + +c.perVial; save(); openSheet(compoundSheet(c.id)); render(); toast('Supply updated.'); break;
     case 'pausecompound': c.paused = !c.paused; save(); openSheet(compoundSheet(c.id)); render(); break;
     case 'delcompound':
-      if (confirm(`Delete ${c.name} and all its logged doses?`)) { S.compounds = S.compounds.filter((x) => x.id !== c.id); S.doses = S.doses.filter((x) => x.cid !== c.id); save(); closeSheet(); render(); }
+      ask(`Delete ${c.name} and all its logged doses?`, 'Delete', () => { S.compounds = S.compounds.filter((x) => x.id !== c.id); S.doses = S.doses.filter((x) => x.cid !== c.id); save(); closeSheet(); render(); });
       break;
     case 'ics': {
       const blob = new Blob([icsFor(c)], { type: 'text/calendar' });
@@ -1106,10 +1122,10 @@ document.addEventListener('click', (ev) => {
     case 'addex': openSheet(addSheet()); break;
     case 'addpick': addExercise(d.n); break;
     case 'swapex': swapExercise(+d.e, d.to); break;
-    case 'removeex': if (confirm('Remove this exercise from today\u2019s workout?')) { S.current.exercises.splice(+d.e, 1); save(); closeSheet(); render(); } break;
+    case 'removeex': ask('Remove this exercise from today\u2019s workout?', 'Remove', () => { S.current.exercises.splice(+d.e, 1); save(); render(); }); break;
     case 'unswap': delete S.swaps[d.n]; save(); render(); toast('Swap removed.'); break;
     case 'start':
-      if (S.current && !confirm('A workout is already in progress. Replace it?')) return;
+      if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(d.p, +d.d); }); return; }
       startSession(d.p, +d.d); break;
     case 'activate': S.activeProgram = d.id; save(); toast('Program activated.'); render(); break;
     case 'addset': {
@@ -1124,8 +1140,8 @@ document.addEventListener('click', (ev) => {
     case 'timer': timer ? stopTimer() : startTimer(+d.s); break;
     case 'stoptimer': stopTimer(); break;
     case 'finish': finishSession(); break;
-    case 'discard': if (confirm('Discard this workout?')) { S.current = null; save(); stopTimer(); go('today'); } break;
-    case 'delsession': if (confirm('Delete this session from your logbook?')) { S.sessions = S.sessions.filter((s) => s.id !== d.id); save(); render(); } break;
+    case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
+    case 'delsession': ask('Delete this session from your logbook?', 'Delete session', () => { S.sessions = S.sessions.filter((s) => s.id !== d.id); save(); render(); }); break;
     case 'addstaple': { const f = FOODS[+d.i]; (S.food[today()] ||= []).push({ ...f }); save(); render(); toast(`Added ${f.name}`); break; }
     case 'delfood': S.food[today()].splice(+d.i, 1); save(); render(); break;
     case 'setgoal': S.settings.goal = d.id; save(); render(); break;
@@ -1136,7 +1152,7 @@ document.addEventListener('click', (ev) => {
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `iron77-backup-${today()}.json`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000); break;
     }
-    case 'reset': if (confirm('Erase ALL logs, food and settings? This cannot be undone.')) { S = structuredClone(DEFAULT); save(); go('today'); } break;
+    case 'reset': ask('Erase ALL workouts, protocol, food and settings? This can\u2019t be undone.', 'Erase everything', () => { S = structuredClone(DEFAULT); save(); go('today'); }); break;
   }
 });
 

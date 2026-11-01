@@ -262,3 +262,6 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 #calcout .stats { margin-top: 0; }
 .toast:not(.show) { visibility: hidden; transition: transform .3s, visibility 0s .3s; }
 
+.btn.danger-solid { background: var(--red); color: var(--ink); box-shadow: 0 3px 0 #a5232a; }
+.top .row .icon { font-size: 24px; }
+.askq { font: 600 17px/1.45 var(--mono); margin: 4px 40px 8px 0; }
