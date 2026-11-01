@@ -1,0 +1,10 @@
+{
+  "name": "IRON77",
+  "short_name": "IRON77",
+  "description": "Golden-era bodybuilding: Heavy Duty, classic programs, era nutrition and supplements.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#14110f",
+  "theme_color": "#14110f",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
