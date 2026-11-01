@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '11'; // keep in step with VERSION in sw.js
+const APP_VERSION = '12'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -40,6 +40,7 @@ const DEFAULT = {
   compounds: [],
   doses: [],
   weights: [],
+  supplies: [],
 };
 let S;
 try { S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -509,7 +510,7 @@ const isInj = (c) => c.route === 'SubQ' || c.route === 'IM';
 
 const dateAdd = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA'); };
 const dow = (d) => new Date(d + 'T12:00').getDay();
-const fmtShort = (d) => new Date(d + 'T12:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' });
+const fmtShort = (d) => { const x = new Date(d + 'T12:00'); return `${x.toLocaleDateString(undefined, { weekday: 'short' })} ${x.getDate()}`; };
 const nowTime = () => new Date().toTimeString().slice(0, 5);
 const fmtNum = (n) => (Math.round(n * 100) / 100).toString();
 
@@ -524,7 +525,7 @@ if (!S.protoMigrated) {
   }
   S.stack = []; S.protoMigrated = true; save();
 }
-S.compounds ||= []; S.doses ||= []; S.weights ||= [];
+S.compounds ||= []; S.doses ||= []; S.weights ||= []; S.supplies ||= [];
 
 const compById = (id) => S.compounds.find((c) => c.id === id);
 const schedText = (c) => {
@@ -569,11 +570,22 @@ function runwayDays(c) {
   return Math.floor((+c.supply / (+c.dose * perWeek(c))) * 7);
 }
 const concOf = (c) => (c.mix?.type === 'premix' ? +c.mix.conc : c.mix?.type === 'recon' && +c.mix.water > 0 ? +c.mix.vial / +c.mix.water : 0);
+/* syringe supplies */
+const SYR_SIZES = { insulin: ['0.3', '0.5', '1'], ml: ['1', '3', '5', '10'] };
+const syrById = (id) => S.supplies.find((x) => x.id === id);
+const syrName = (x) => (x.type === 'insulin' ? `${fmtNum(+x.size)} ml insulin (U-100)` : `${fmtNum(+x.size)} ml syringe`);
+const syrLabel = (x) => [syrName(x), x.gauge ? `${x.gauge}G` : '', x.length || ''].filter(Boolean).join(' · ');
+const syrPerWeek = (x) => S.compounds.filter((c) => !c.paused && isInj(c) && c.syringe === x.id).reduce((a, c) => a + perWeek(c), 0);
+const syrRunway = (x) => { const w = syrPerWeek(x); return w ? Math.floor((+x.count / w) * 7) : null; };
+const syrLow = (x) => +x.count <= (+x.low || 0) || (syrRunway(x) != null && syrRunway(x) < 7);
+
 function drawText(c, amt = c.dose) {
   const conc = concOf(c);
   if (!(conc > 0) || !(+amt > 0) || !isInj(c)) return '';
-  const ml = +amt / conc;
-  return `Draw ${fmtNum(ml)} ml · ${fmtNum(ml * 100)} units (U-100)`;
+  const ml = +amt / conc, sy = syrById(c.syringe);
+  if (sy && sy.type === 'ml') return `Draw ${fmtNum(ml)} ml${ml > +sy.size ? ` (more than your ${fmtNum(+sy.size)} ml syringe holds)` : ''}`;
+  const u = ml * 100;
+  return `Draw ${fmtNum(ml)} ml · ${fmtNum(u)} units (U-100)${sy && u > +sy.size * 100 ? ` (more than your ${fmtNum(+sy.size * 100)}-unit syringe holds: split it)` : ''}`;
 }
 function suggestSite(c) {
   const sites = SITES[c.route]; if (!sites) return '';
@@ -585,12 +597,16 @@ function logDose(c, { amount = c.dose, site = isInj(c) ? suggestSite(c) : '', da
   const dose = { id: uid(), cid: c.id, date, time, amount, unit: c.unit, site, note };
   S.doses.push(dose);
   if (c.supply !== '' && c.supply != null && +amount > 0) c.supply = Math.max(0, +c.supply - +amount);
+  const sy = isInj(c) && syrById(c.syringe);
+  if (sy && +sy.count > 0) { sy.count = +sy.count - 1; dose.syringe = sy.id; }
   save(); return dose;
 }
 function removeDose(id) {
   const dose = S.doses.find((x) => x.id === id); if (!dose) return;
   const c = compById(dose.cid);
   if (c && c.supply !== '' && c.supply != null && +dose.amount > 0) c.supply = +c.supply + +dose.amount;
+  const sy = dose.syringe && syrById(dose.syringe);
+  if (sy) sy.count = +sy.count + 1;
   S.doses = S.doses.filter((x) => x.id !== id); save();
 }
 const kindColor = (k) => ({ peptide: 'var(--accent)', hormone: 'var(--red)', supplement: 'var(--ink)', medication: 'var(--steel)' })[k] || 'var(--label)';
@@ -615,6 +631,7 @@ function protocolToday() {
     </div>`;
   };
   return `${due.length ? due.map(row).join('') : '<p class="muted small">Nothing scheduled today.</p>'}
+    ${S.supplies.filter(syrLow).map((x) => `<p class="warn small missed">Low on syringes: ${fmtNum(+x.count)} left (${esc(syrLabel(x))}). <button class="link" data-act="supply" data-id="${x.id}">Restock</button></p>`).join('')}
     ${missed.map(([c, m]) => `<p class="warn small missed">Missed ${esc(c.name)} on ${esc(fmtDate(m))}. <button class="link" data-act="logmissed" data-id="${c.id}" data-d="${m}">Log it</button></p>`).join('')}
     ${soon.length ? `<p class="muted small soon">Coming up: ${soon.map(([c, n]) => `${esc(c.name)} ${DOW[dow(n)]}`).join(' · ')}</p>` : ''}`;
 }
@@ -675,6 +692,20 @@ V.protocol = () => `
     </button>`;
   }).join('')}
   <button class="btn" data-act="newcompound">+ Add compound</button>
+  <div class="kicker pad">Supplies</div>
+  ${S.supplies.map((x) => {
+    const rw = syrRunway(x), users = S.compounds.filter((c) => c.syringe === x.id);
+    return `<button class="card comp" data-act="supply" data-id="${x.id}" style="--k:var(--steel)">
+      <div class="row between"><span class="kicker">${x.type === 'insulin' ? 'SubQ syringes' : 'IM syringes'}</span>${syrLow(x) ? '<span class="badge wait">Low</span>' : ''}</div>
+      <h3>${esc(syrLabel(x))}</h3>
+      <p class="muted small">${users.length ? 'Used for ' + users.map((c) => esc(c.name)).join(', ') : 'Not linked to a compound yet. Pick it in a compound\u2019s Syringe field.'}</p>
+      <div class="stats">
+        <div><span>On hand</span><b>${fmtNum(+x.count)}</b></div>
+        <div><span>Lasts</span><b>${rw == null ? '—' : rw < 14 ? `${rw} days` : `${Math.round(rw / 7)} wks`}</b></div>
+        <div><span>Per week</span><b>${fmtNum(syrPerWeek(x))}</b></div>
+      </div></button>`;
+  }).join('')}
+  <button class="btn ghost" data-act="newsupply">+ Add syringes</button>
   <div class="kicker pad">Metrics</div>
   ${weightCard()}
   <button class="btn ghost" data-act="summary">Export summary for your doctor</button>
@@ -731,6 +762,8 @@ function compoundForm(c, hint = '') {
       <label>End (optional)<input name="end" type="date" value="${esc(c.end || '')}"></label></div>
     <fieldset class="f-inj"><legend>Syringe maths (optional)</legend>
       <p class="muted small" style="margin:0">Not sure? Use the calculator in Settings, then save it to this compound.</p>
+      <label>Syringe<select name="syringe"><option value="">Not tracked</option>${S.supplies.map((x) => `<option value="${x.id}" ${c.syringe === x.id ? 'selected' : ''}>${esc(syrLabel(x))}</option>`).join('')}</select></label>
+      ${S.supplies.length ? '' : '<p class="muted small" style="margin:0">Add your syringes under Stack → Supplies to track them per dose.</p>'}
       <label>Concentration<select name="mixtype" data-act="formsync">${opt([['none', 'Skip'], ['premix', 'Pre-mixed (e.g. oil)'], ['recon', 'Reconstituted vial']], c.mix?.type || 'none')}</select></label>
       <label class="f-premix">Strength per ml<input name="conc" inputmode="decimal" value="${esc(c.mix?.conc || '')}" placeholder="e.g. 200 (in your dose unit per ml)"></label>
       <div class="grid2 f-recon"><label>Amount in vial<input name="vial" inputmode="decimal" value="${esc(c.mix?.vial || '')}" placeholder="e.g. 10"></label>
@@ -785,6 +818,29 @@ function compoundSheet(id) {
     ${c.notes ? `<p class="muted small">${esc(c.notes)}</p>` : ''}`;
 }
 
+function supplyForm(x) {
+  const isNew = !x;
+  x ||= { type: 'insulin', size: '0.5', gauge: '31', length: '5/16"', count: '', low: '10', box: '100' };
+  return `<h2>${isNew ? 'Add syringes' : 'Syringes'}</h2>
+  ${isNew ? '' : `<p class="muted">${esc(syrLabel(x))} · ${fmtNum(+x.count)} on hand</p>
+    <div class="stack-btns"><button class="btn" data-act="addbox" data-id="${x.id}">+ Add a box (+${fmtNum(+x.box || 100)})</button></div><h4>Edit</h4>`}
+  <form class="cform" data-act="savesupply" data-id="${x.id || ''}" data-type="${x.type}">
+    <label>Type<select name="type" data-act="supsync">
+      <option value="insulin" ${x.type === 'insulin' ? 'selected' : ''}>Insulin syringe, U-100 (SubQ)</option>
+      <option value="ml" ${x.type === 'ml' ? 'selected' : ''}>Syringe with ml markings (IM)</option></select></label>
+    <label class="f-ins">Size<select name="size_ins">${SYR_SIZES.insulin.map((v) => `<option value="${v}" ${x.type === 'insulin' && String(x.size) === v ? 'selected' : ''}>${v} ml (${+v * 100} units)</option>`).join('')}</select></label>
+    <label class="f-ml">Size<select name="size_ml">${SYR_SIZES.ml.map((v) => `<option value="${v}" ${x.type === 'ml' && String(x.size) === v ? 'selected' : ''}>${v} ml</option>`).join('')}</select></label>
+    <div class="grid2"><label>Gauge<input name="gauge" inputmode="numeric" value="${esc(x.gauge || '')}" placeholder="e.g. 31"></label>
+      <label>Needle length<input name="length" list="lengths" value="${esc(x.length || '')}" placeholder='e.g. 5/16"'></label></div>
+    <datalist id="lengths"><option value='5/16"'><option value='1/2"'><option value='5/8"'><option value='1"'><option value='1.5"'></datalist>
+    <div class="grid2"><label>On hand<input name="count" inputmode="numeric" value="${esc(x.count)}" placeholder="e.g. 100" required></label>
+      <label>Warn me below<input name="low" inputmode="numeric" value="${esc(x.low ?? '')}" placeholder="e.g. 10"></label></div>
+    <label>Box size (for quick restock)<input name="box" inputmode="numeric" value="${esc(x.box ?? '')}" placeholder="e.g. 100"></label>
+    <button class="btn${isNew ? '' : ' ghost'}">${isNew ? 'Add syringes' : 'Save changes'}</button>
+    ${isNew ? '' : `<button type="button" class="btn ghost danger" data-act="delsupply" data-id="${x.id}">Delete</button>`}
+  </form>`;
+}
+
 function saveCompound(form) {
   const f = new FormData(form);
   const g = (k) => String(f.get(k) ?? '').trim();
@@ -795,6 +851,7 @@ function saveCompound(form) {
     name: g('name'), kind: g('kind'), dose: g('dose'), unit: g('unit'), route: g('route'), sched, time: g('time') || '08:00',
     start: g('start') || today(), end: g('end'),
     mix: { type: g('mixtype') || 'none', conc: g('conc'), vial: g('vial'), water: g('water') },
+    syringe: g('syringe'),
     supply: g('supply') === '' ? '' : +g('supply'), perVial: g('perVial') === '' ? '' : +g('perVial'), notes: g('notes'),
   };
   if (!data.name) return;
@@ -902,8 +959,32 @@ document.addEventListener('change', (ev) => {
     save(); toast(el.checked ? `${sup.name} added to My protocol.` : `${sup.name} removed.`);
   }
 });
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  const d = el.dataset, x = d.id && syrById(d.id);
+  if (d.act === 'newsupply') openSheet(supplyForm());
+  else if (d.act === 'supply') openSheet(supplyForm(x));
+  else if (d.act === 'addbox') { x.count = +x.count + (+x.box || 100); save(); openSheet(supplyForm(x)); render(); toast(`${fmtNum(+x.count)} syringes on hand.`); }
+  else if (d.act === 'delsupply' && confirm('Delete these syringes from your supplies?')) {
+    S.supplies = S.supplies.filter((y) => y.id !== x.id);
+    S.compounds.forEach((c) => { if (c.syringe === x.id) c.syringe = ''; });
+    save(); closeSheet(); render();
+  }
+});
+document.addEventListener('change', (ev) => { if (ev.target.dataset.act === 'supsync') ev.target.form.dataset.type = ev.target.value; });
+
 document.addEventListener('submit', (ev) => {
   const form = ev.target; const act = form.dataset.act;
+  if (act === 'savesupply') {
+    ev.preventDefault();
+    const f = new FormData(form), g = (k) => String(f.get(k) ?? '').trim(), type = g('type');
+    const data = { type, size: type === 'insulin' ? g('size_ins') : g('size_ml'), gauge: g('gauge').replace(/g$/i, ''), length: g('length'), count: +g('count') || 0, low: g('low') === '' ? '' : +g('low'), box: +g('box') || '' };
+    const id = form.dataset.id;
+    if (id) Object.assign(syrById(id), data); else S.supplies.push({ id: uid(), ...data });
+    save(); closeSheet(); render();
+    toast(id ? 'Saved.' : 'Syringes added. Link them in each compound\u2019s Syringe field.');
+    return;
+  }
   if (act === 'savecompound') { ev.preventDefault(); saveCompound(form); }
   else if (act === 'logdose') {
     ev.preventDefault();

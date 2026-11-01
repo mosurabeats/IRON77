@@ -265,3 +265,7 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .syringe { width: 100%; height: auto; display: block; margin: 12px 0 4px; }
 #calcout .stats { margin-top: 0; }
 .toast:not(.show) { visibility: hidden; transition: transform .3s, visibility 0s .3s; }
+
+/* syringe supplies */
+.f-ins, .f-ml { display: none !important; }
+.cform[data-type="insulin"] .f-ins, .cform[data-type="ml"] .f-ml { display: block !important; }
