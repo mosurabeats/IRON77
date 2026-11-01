@@ -170,6 +170,20 @@ const bar = (label, val, max, unit = 'g') => {
   return `<div class="bar"><div class="bar-l"><span>${label}</span><span>${Math.round(val)} / ${max}${unit}</span></div>
     <div class="bar-t"><div class="bar-f${val > max ? ' over' : ''}" style="width:${pct}%"></div></div></div>`;
 };
+const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC = {
+  back: svg('<path d="M15 18l-6-6 6-6"/>'),
+  gear: svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
+  timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>'),
+  check: svg('<path d="M20 6L9 17l-5-5"/>'),
+  arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+};
+const ring = (label, val, max, unit = 'g') => {
+  const pct = max ? Math.min(1, val / max) : 0, C = 2 * Math.PI * 26;
+  return `<div class="ring${val > max ? ' over' : ''}"><div class="rw"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" class="rt"/>
+    <circle cx="32" cy="32" r="26" class="rf" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg>
+    <b>${Math.round(val)}</b></div><span>${label}</span><em>of ${max}${unit}</em></div>`;
+};
 const evBadge = (e) => `<span class="badge ev-${e}">${{ strong: 'Strong evidence', moderate: 'Moderate', limited: 'Limited', none: 'No evidence' }[e]}</span>`;
 
 const V = {};
@@ -182,15 +196,17 @@ V.today = () => {
   const t = targets(), e = eaten();
   const log = S.stackLog[today()] || [];
   const creed = CREED[new Date().getDate() % CREED.length];
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
   return `
-  <header class="top"><div><div class="kicker">${esc(fmtDate(today()))}</div><h1>IRON<span>77</span></h1></div>
-    <button class="icon" data-act="go" data-v="settings" aria-label="Settings">⚙</button></header>
-  <p class="creed">${esc(creed)}</p>
+  <header class="top"><div><div class="brand">IRON<span>77</span></div><h1>${greet}</h1><div class="muted">${esc(fmtDate(today()))}</div></div>
+    <button class="icon" data-act="go" data-v="settings" aria-label="Settings">${IC.gear}</button></header>
+  <p class="creed">“${esc(creed)}”</p>
 
   ${S.current ? `<section class="card hot"><div class="kicker">In progress</div><h2>${esc(S.current.dayName)}</h2>
     <button class="btn" data-act="go" data-v="session">Resume Workout</button></section>` : ''}
 
-  <section class="card">
+  <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
     <h2>Next: ${esc(day.name)}</h2>
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
@@ -199,12 +215,12 @@ V.today = () => {
   </section>
 
   <section class="card">
-    <div class="row between"><div class="kicker">Fuel · ${esc(t.diet.name)}</div><button class="link" data-act="go" data-v="fuel">Log food →</button></div>
-    ${bar('Calories', e.kcal, t.kcal, '')}${bar('Protein', e.p, t.p)}${bar('Carbs', e.c, t.c)}${bar('Fat', e.f, t.f)}
+    <div class="row between"><h3>Fuel</h3><button class="link" data-act="go" data-v="fuel">Log food ${IC.arrow}</button></div>
+    <div class="rings">${ring('kcal', e.kcal, t.kcal, '')}${ring('Protein', e.p, t.p)}${ring('Carbs', e.c, t.c)}${ring('Fat', e.f, t.f)}</div>
   </section>
 
   <section class="card">
-    <div class="row between"><div class="kicker">Today's stack</div><button class="link" data-act="go" data-v="stack">Edit →</button></div>
+    <div class="row between"><h3>Today's stack</h3><button class="link" data-act="go" data-v="stack">Edit ${IC.arrow}</button></div>
     ${S.stack.length ? S.stack.map((id) => {
       const s = SUPPLEMENTS.find((x) => x.id === id); if (!s) return '';
       return `<label class="check"><input type="checkbox" data-act="takesupp" data-id="${id}" ${log.includes(id) ? 'checked' : ''}><span>${esc(s.name)}</span></label>`;
@@ -238,7 +254,7 @@ V.program = (id) => {
   const p = progById(id);
   const isActive = S.activeProgram === p.id;
   return `
-  <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">‹</button><h1 class="sm">${esc(p.name)}</h1></header>
+  <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">${IC.back}</button><h1 class="sm">${esc(p.name)}</h1></header>
   <section class="card">
     <div class="kicker">${esc(p.legend)} · ${esc(p.level)}</div>
     <p>${esc(p.summary)}</p>
@@ -247,7 +263,7 @@ V.program = (id) => {
     ${isActive ? '<span class="badge ok">ACTIVE PROGRAM</span>' : `<button class="btn" data-act="activate" data-id="${p.id}">Make Active Program</button>`}
   </section>
   ${p.days.map((d, i) => `<section class="card">
-    <div class="row between"><h3>${esc(d.name)}</h3><button class="link" data-act="start" data-p="${p.id}" data-d="${i}">Start →</button></div>
+    <div class="row between"><h3>${esc(d.name)}</h3><button class="link" data-act="start" data-p="${p.id}" data-d="${i}">Start ${IC.arrow}</button></div>
     <ol class="exlist">${d.exercises.map((x) => `<li><span>${x.ss ? '⇄ ' : ''}${esc(x.name)}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span><b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
   </section>`).join('')}`;
 };
@@ -259,7 +275,7 @@ V.session = () => {
   const unit = S.settings.unit;
   return `
   <header class="top"><div><div class="kicker">${esc(prog.name)}</div><h1 class="sm">${esc(c.dayName)}</h1></div>
-    <button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">⏱</button></header>
+    <button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button></header>
   ${c.exercises.map((ex, ei) => {
     const last = lastPerformance(ex.name);
     const top = upperReps(ex.reps);
@@ -275,7 +291,7 @@ V.session = () => {
           <span>${si + 1}</span>
           <input inputmode="decimal" data-act="setval" data-e="${ei}" data-s="${si}" data-k="w" value="${esc(s.w)}" aria-label="Weight">
           <input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="r" value="${esc(s.r)}" aria-label="Reps">
-          <button class="tick" data-act="donesset" data-e="${ei}" data-s="${si}" aria-label="Mark set done">✓</button>
+          <button class="tick" data-act="donesset" data-e="${ei}" data-s="${si}" aria-label="Mark set done">${IC.check}</button>
         </div>`).join('')}
       </div>
       <button class="link" data-act="addset" data-e="${ei}">+ Add set</button>
@@ -348,11 +364,11 @@ V.legends = () => `
     <h4>Philosophy</h4><p>${esc(l.philosophy)}</p>
     <h4>Training</h4><p>${esc(l.training)}</p>
     <h4>Diet</h4><p>${esc(l.diet)}</p>
-    <button class="btn ghost" data-act="go" data-v="program" data-arg="${l.program}">Train in his style →</button>
+    <button class="btn ghost" data-act="go" data-v="program" data-arg="${l.program}">Train in his style</button>
   </details>`).join('')}`;
 
 V.settings = () => `
-  <header class="top"><button class="icon" data-act="go" data-v="today" aria-label="Back">‹</button><h1 class="sm">Settings</h1></header>
+  <header class="top"><button class="icon" data-act="go" data-v="today" aria-label="Back">${IC.back}</button><h1 class="sm">Settings</h1></header>
   <section class="card">
     <div class="kicker">Units</div>
     <div class="seg">${['lb', 'kg'].map((u) => `<button class="${S.settings.unit === u ? 'on' : ''}" data-act="setunit" data-u="${u}">${u}</button>`).join('')}</div>
