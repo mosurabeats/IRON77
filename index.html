@@ -21,6 +21,13 @@
   <main id="view"></main>
   <div id="timer" class="timer" hidden><span>REST</span><span class="t">0:00</span><button data-act="stoptimer" aria-label="Stop timer">✕</button></div>
   <div id="toast" class="toast" role="status"></div>
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-bg" data-act="closesheet"></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true">
+      <button class="sheet-x" data-act="closesheet" aria-label="Close">×</button>
+      <div class="sheet-body"></div>
+    </div>
+  </div>
   <nav>
     <button data-act="go" data-v="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Today</button>
     <button data-act="go" data-v="train"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></svg>Train</button>

@@ -32,11 +32,42 @@ const DEFAULT = {
   food: {},
   stack: ['creatine', 'whey', 'liver'],
   stackLog: {},
+  equipment: EQUIPMENT.map(([k]) => k).filter((k) => k !== 'nautilus'),
+  equipSet: false,
+  swaps: {},
 };
 let S;
 try { S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY) || '{}')); }
 catch { S = structuredClone(DEFAULT); }
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+// Migrate renamed exercises so logbook history still matches.
+{
+  const mig = (n) => EX_ALIASES[n] || n;
+  S.sessions.forEach((x) => x.exercises.forEach((e) => { e.name = mig(e.name); }));
+  if (S.current) S.current.exercises.forEach((e) => { e.name = mig(e.name); });
+}
+
+/* ---------- exercises & equipment ---------- */
+const lib = (n) => EXERCISES[n];
+const equipName = (k) => (EQUIPMENT.find(([id]) => id === k) || [k, k])[1];
+const missingFor = (n) => (lib(n) ? lib(n)[1].filter((k) => !S.equipment.includes(k)) : []);
+const canDo = (n) => missingFor(n).length === 0;
+// What the athlete will actually do for a programmed exercise, given swaps and equipment.
+function resolveEx(name) {
+  const sw = S.swaps[name];
+  if (sw && canDo(sw)) return { name: sw, from: name, why: 'your swap' };
+  if (canDo(name)) return { name };
+  const alt = ((lib(name) || [])[2] || []).find(canDo);
+  return alt ? { name: alt, from: name, why: 'no ' + missingFor(name).map(equipName).join(', ').toLowerCase() } : { name, missing: true };
+}
+const exLabel = (x, extra = '') => {
+  const r = resolveEx(x.name);
+  return `<span><button class="exname" data-act="demo" data-n="${esc(r.name)}">${x.ss ? '⇄ ' : ''}${esc(r.name)}</button>`
+    + (r.from ? `<em>↺ instead of ${esc(r.from)} (${esc(r.why)})</em>` : '')
+    + (r.missing ? `<em class="warn">Needs ${esc(missingFor(r.name).map(equipName).join(', '))}</em>` : '')
+    + extra + '</span>';
+};
+const ytURL = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 
 let view = 'today';
 let viewArg = null;
@@ -103,9 +134,10 @@ function startSession(progId, dayIdx) {
   S.current = {
     id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name,
     exercises: day.exercises.map((ex) => {
-      const last = lastPerformance(ex.name);
+      const res = resolveEx(ex.name);
+      const last = lastPerformance(res.name);
       return {
-        name: ex.name, target: `${ex.sets} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
+        name: res.name, from: res.from || '', target: `${ex.sets} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
         sets: Array.from({ length: ex.sets }, () => ({ w: last ? last.w : '', r: '', done: false })),
       };
     }),
@@ -177,6 +209,7 @@ const IC = {
   timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>'),
   check: svg('<path d="M20 6L9 17l-5-5"/>'),
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  play: svg('<path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/>'),
 };
 const ring = (label, val, max, unit = 'g') => {
   const pct = max ? Math.min(1, val / max) : 0, C = 2 * Math.PI * 26;
@@ -210,7 +243,7 @@ V.today = () => {
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
     <h2>Next: ${esc(day.name)}</h2>
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
-    <ol class="exlist">${day.exercises.map((x) => `<li><span>${x.ss ? '⇄ ' : ''}${esc(x.name)}</span><b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
+    <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
     ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
   </section>
 
@@ -233,6 +266,12 @@ V.train = () => {
   const hist = [...S.sessions].reverse();
   return `
   <header class="top"><h1>Train</h1></header>
+  <div class="tools">
+    <button class="card tool${S.equipSet ? '' : ' hot'}" data-act="go" data-v="equipment">
+      <h3>My gym</h3><p class="muted small">${S.equipSet ? `${S.equipment.length} of ${EQUIPMENT.length} equipment types` : 'Tell IRON77 what your gym has'}</p></button>
+    <button class="card tool" data-act="go" data-v="library">
+      <h3>Exercises</h3><p class="muted small">${Object.keys(EXERCISES).length} movements: form cues & demos</p></button>
+  </div>
   <div class="kicker pad">Programs</div>
   ${PROGRAMS.map((p) => `
     <button class="card prog${p.id === active.id ? ' active' : ''}" data-act="go" data-v="program" data-arg="${p.id}">
@@ -264,7 +303,8 @@ V.program = (id) => {
   </section>
   ${p.days.map((d, i) => `<section class="card">
     <div class="row between"><h3>${esc(d.name)}</h3><button class="link" data-act="start" data-p="${p.id}" data-d="${i}">Start ${IC.arrow}</button></div>
-    <ol class="exlist">${d.exercises.map((x) => `<li><span>${x.ss ? '⇄ ' : ''}${esc(x.name)}${x.note ? `<em>${esc(x.note)}</em>` : ''}</span><b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
+    <ol class="exlist">${d.exercises.map((x) => `<li>${exLabel(x, x.note ? `<em>${esc(x.note)}</em>` : '')}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
+    <p class="muted small">Tap an exercise for form cues and demos.</p>
   </section>`).join('')}`;
 };
 
@@ -281,7 +321,8 @@ V.session = () => {
     const top = upperReps(ex.reps);
     const hint = last && top && +last.r >= top ? `Last time you hit ${esc(last.r)} reps at ${esc(last.w)}. Add weight (about 5%).` : '';
     return `<section class="card ex">
-      <div class="row between"><h3>${ex.ss ? '⇄ ' : ''}${esc(ex.name)}</h3><span class="badge">${esc(ex.target)}</span></div>
+      <div class="row between"><h3><button class="exname" data-act="demo" data-n="${esc(ex.name)}" data-e="${ei}">${ex.ss ? '⇄ ' : ''}${esc(ex.name)} <i class="info">ⓘ</i></button></h3><span class="badge">${esc(ex.target)}</span></div>
+      ${ex.from ? `<p class="muted small">↺ Instead of ${esc(ex.from)}</p>` : ''}
       ${ex.note ? `<p class="muted small">${esc(ex.note)}</p>` : ''}
       ${last ? `<p class="small muted">Last: ${esc(last.w)} ${unit} × ${esc(last.r)} · ${esc(fmtDate(last.date))}</p>` : ''}
       ${hint ? `<p class="small hint">↑ ${hint}</p>` : ''}
@@ -297,6 +338,7 @@ V.session = () => {
       <button class="link" data-act="addset" data-e="${ei}">+ Add set</button>
     </section>`;
   }).join('')}
+  <button class="btn ghost" data-act="addex">+ Add Exercise</button>
   <div class="stack-btns">
     <button class="btn" data-act="finish">Finish & Log</button>
     <button class="btn ghost" data-act="discard">Discard</button>
@@ -367,6 +409,93 @@ V.legends = () => `
     <button class="btn ghost" data-act="go" data-v="program" data-arg="${l.program}">Train in his style</button>
   </details>`).join('')}`;
 
+const exRows = (onclick) => {
+  const groups = {};
+  for (const [n, e] of Object.entries(EXERCISES)) (groups[e[0]] ||= []).push(n);
+  return Object.entries(groups).map(([g, names]) => `<div class="kicker pad">${esc(g)}</div><div class="card list">
+    ${names.map((n) => `<button class="exrow" data-act="${onclick}" data-n="${esc(n)}" data-search="${esc((n + ' ' + g).toLowerCase())}">
+      <span>${esc(n)}</span>${canDo(n) ? '' : `<span class="badge">Needs ${esc(missingFor(n).map(equipName).join(', '))}</span>`}</button>`).join('')}</div>`).join('');
+};
+
+V.library = () => `
+  <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">${IC.back}</button><h1 class="sm">Exercises</h1></header>
+  <input class="search" type="search" placeholder="Search exercises" data-act="exsearch" aria-label="Search exercises">
+  <div class="searchable">${exRows('demo')}</div>`;
+
+V.equipment = () => `
+  <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">${IC.back}</button><h1 class="sm">My gym</h1></header>
+  <p class="muted pad">Tick what your gym has. When a program calls for equipment you don't have, IRON77 swaps in the closest movement you can do. Tick it again when you move gyms and the original comes back.</p>
+  <section class="card">${EQUIPMENT.map(([k, n]) => `<label class="check"><input type="checkbox" data-act="equip" data-k="${k}" ${S.equipment.includes(k) ? 'checked' : ''}><span>${esc(n)}</span></label>`).join('')}</section>
+  ${Object.keys(S.swaps).length ? `<section class="card"><h3>Your swaps</h3>
+    ${Object.entries(S.swaps).map(([a, b]) => `<div class="row between small swaprow"><span>${esc(a)} → <b>${esc(b)}</b></span><button class="link danger" data-act="unswap" data-n="${esc(a)}">Remove</button></div>`).join('')}</section>` : ''}`;
+
+/* ---------- bottom sheet: exercise demo / add exercise ---------- */
+function openSheet(html) {
+  const sh = $('#sheet');
+  sh.querySelector('.sheet-body').innerHTML = html;
+  sh.hidden = false; document.body.classList.add('locked');
+  sh.querySelector('.sheet-body').scrollTop = 0;
+}
+function closeSheet() { $('#sheet').hidden = true; document.body.classList.remove('locked'); }
+
+function demoSheet(name, ei) {
+  const e = lib(name);
+  const inSession = ei != null && S.current && S.current.exercises[ei];
+  const cur = inSession ? S.current.exercises[ei] : null;
+  const original = cur ? (cur.from || cur.name) : null;
+  let alts = e ? [...e[2]] : [];
+  if (cur && cur.from && !alts.includes(cur.from)) alts.unshift(cur.from);
+  if (cur) alts = alts.filter((a) => a !== cur.name);
+  const miss = missingFor(name);
+  return `
+    <div class="kicker">${e ? esc(e[0]) : 'Custom exercise'}${e && e[1].length ? ' · ' + esc(e[1].map(equipName).join(', ')) : e ? ' · Bodyweight' : ''}</div>
+    <h2>${esc(name)}</h2>
+    ${miss.length ? `<p class="warn small">Your gym doesn't have: ${esc(miss.map(equipName).join(', '))}</p>` : ''}
+    ${e ? `<h4>How to do it</h4><ol class="cues">${e[3].map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}
+    <h4>Watch</h4>
+    <div class="vids">
+      <a class="btn ghost" href="${ytURL((e && e[4]) || 'golden era bodybuilding ' + name)}" target="_blank" rel="noopener">${IC.play} Classic footage</a>
+      <a class="btn ghost" href="${ytURL(name + ' proper form')}" target="_blank" rel="noopener">${IC.play} Form tutorial</a>
+    </div>
+    <p class="muted small">Opens a YouTube search. Results are other people's videos, so quality varies.</p>
+    ${alts.length ? `<h4>${cur ? 'Swap for' : 'Alternatives'}</h4><div class="card list inset">
+      ${alts.map((a) => `<div class="exrow"><button class="exname" data-act="demo" data-n="${esc(a)}"${cur ? ` data-e="${ei}"` : ''}>${esc(a)}${a === (cur && cur.from) ? ' <em>(original)</em>' : ''}</button>
+        ${!canDo(a) ? `<span class="badge">Needs ${esc(missingFor(a).map(equipName).join(', '))}</span>` : cur ? `<button class="link" data-act="swapex" data-e="${ei}" data-to="${esc(a)}">Swap in</button>` : ''}</div>`).join('')}</div>
+      ${cur && !cur.added ? `<p class="muted small">Swaps are remembered: next time, ${esc(original)} will be replaced too. Undo under Train → My gym.</p>` : ''}` : ''}
+    ${cur && cur.name !== name && !cur.added ? `<button class="btn" data-act="swapex" data-e="${ei}" data-to="${esc(name)}"${canDo(name) ? '' : ' disabled'}>Swap ${esc(cur.name)} for this</button>` : ''}
+    ${cur && cur.name === name ? `<button class="btn ghost danger" data-act="removeex" data-e="${ei}">Remove from this workout</button>` : ''}`;
+}
+
+function addSheet() {
+  return `<h2>Add exercise</h2>
+    <input class="search" type="search" placeholder="Search exercises" data-act="exsearch" aria-label="Search exercises">
+    <div class="searchable">${exRows('addpick')}</div>
+    <h4>Not listed?</h4>
+    <form class="custom" data-act="addcustomex"><input name="name" placeholder="Custom exercise name" required><button class="btn ghost">Add custom</button></form>`;
+}
+
+function swapExercise(ei, to) {
+  const ex = S.current.exercises[ei];
+  const original = ex.from || ex.name;
+  ex.name = to;
+  ex.from = to === original ? '' : original;
+  if (!ex.added) { if (to === original) delete S.swaps[original]; else S.swaps[original] = to; }
+  const last = lastPerformance(to);
+  ex.sets.forEach((st) => { if (!st.done) st.w = last ? last.w : ''; });
+  save(); closeSheet(); render();
+  toast(to === original ? `Back to ${to}.` : `Swapped to ${to}.`);
+}
+
+function addExercise(name) {
+  const prog = progById(S.current.programId);
+  const n = prog.style === 'HIT' ? 1 : 3, reps = prog.style === 'HIT' ? '6-10' : '8-12';
+  const last = lastPerformance(name);
+  S.current.exercises.push({ name, from: '', target: `${n} × ${reps}`, reps, ss: false, note: '', added: true,
+    sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', done: false })) });
+  save(); closeSheet(); render(); toast(`Added ${name}.`);
+  setTimeout(() => document.querySelectorAll('.card.ex')[S.current.exercises.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+}
+
 V.settings = () => `
   <header class="top"><button class="icon" data-act="go" data-v="today" aria-label="Back">${IC.back}</button><h1 class="sm">Settings</h1></header>
   <section class="card">
@@ -387,7 +516,7 @@ V.settings = () => `
 /* ---------- render & routing ---------- */
 function render() {
   $('#view').innerHTML = (V[view] || V.today)(viewArg);
-  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === view || (view === 'program' && b.dataset.v === 'train') || (view === 'session' && b.dataset.v === 'train')));
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === view || (['program', 'library', 'equipment'].includes(view) && b.dataset.v === 'train') || (view === 'session' && b.dataset.v === 'train')));
 }
 function go(v, arg = null) { view = v; viewArg = arg; render(); window.scrollTo(0, 0); }
 
@@ -402,7 +531,14 @@ document.addEventListener('click', (ev) => {
   const el = ev.target.closest('[data-act]'); if (!el) return;
   const d = el.dataset;
   switch (d.act) {
-    case 'go': go(d.v, d.arg || null); break;
+    case 'go': if (d.v === 'equipment') { S.equipSet = true; save(); } closeSheet(); go(d.v, d.arg || null); break;
+    case 'demo': openSheet(demoSheet(d.n, d.e != null ? +d.e : null)); break;
+    case 'closesheet': closeSheet(); break;
+    case 'addex': openSheet(addSheet()); break;
+    case 'addpick': addExercise(d.n); break;
+    case 'swapex': swapExercise(+d.e, d.to); break;
+    case 'removeex': if (confirm('Remove this exercise from today\u2019s workout?')) { S.current.exercises.splice(+d.e, 1); save(); closeSheet(); render(); } break;
+    case 'unswap': delete S.swaps[d.n]; save(); render(); toast('Swap removed.'); break;
     case 'start':
       if (S.current && !confirm('A workout is already in progress. Replace it?')) return;
       startSession(d.p, +d.d); break;
@@ -438,7 +574,10 @@ document.addEventListener('click', (ev) => {
 
 document.addEventListener('change', (ev) => {
   const el = ev.target; const d = el.dataset;
-  if (d.act === 'takesupp') {
+  if (d.act === 'equip') {
+    S.equipment = el.checked ? [...new Set([...S.equipment, d.k])] : S.equipment.filter((x) => x !== d.k);
+    S.equipSet = true; save();
+  } else if (d.act === 'takesupp') {
     const arr = (S.stackLog[today()] ||= []);
     if (el.checked) { if (!arr.includes(d.id)) arr.push(d.id); } else S.stackLog[today()] = arr.filter((x) => x !== d.id);
     save();
@@ -458,8 +597,27 @@ document.addEventListener('change', (ev) => {
   }
 });
 
+document.addEventListener('input', (ev) => {
+  if (ev.target.dataset.act !== 'exsearch') return;
+  const q = ev.target.value.trim().toLowerCase();
+  const root = ev.target.nextElementSibling;
+  root.querySelectorAll('.exrow').forEach((r) => { r.hidden = q && !r.dataset.search.includes(q); });
+  root.querySelectorAll('.list').forEach((l) => {
+    const any = [...l.querySelectorAll('.exrow')].some((r) => !r.hidden);
+    l.hidden = !any; l.previousElementSibling.hidden = !any;
+  });
+});
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeSheet(); });
+
 document.addEventListener('submit', (ev) => {
-  const form = ev.target; if (form.dataset.act !== 'addcustom') return;
+  const form = ev.target;
+  if (form.dataset.act === 'addcustomex') {
+    ev.preventDefault();
+    const name = new FormData(form).get('name').trim();
+    if (name) addExercise(name);
+    return;
+  }
+  if (form.dataset.act !== 'addcustom') return;
   ev.preventDefault();
   const fd = new FormData(form);
   const item = { name: fd.get('name').trim(), p: +fd.get('p') || 0, c: +fd.get('c') || 0, f: +fd.get('f') || 0 };
