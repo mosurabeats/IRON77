@@ -702,12 +702,27 @@ V.guide = () => {
 };
 
 /* --- Sheets --- */
-function compoundForm(c) {
-  const isNew = !c;
-  c ||= { name: '', kind: 'peptide', dose: '', unit: 'mg', route: 'SubQ', sched: { type: 'interval', every: 7 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '' };
+const KIND_GROUPS = [['peptide', 'Peptides'], ['hormone', 'Hormones'], ['medication', 'Medications'], ['supplement', 'Supplements']];
+function compoundPicker() {
+  const have = new Set(S.compounds.map((c) => c.name.toLowerCase()));
+  return `<h2>Add compound</h2>
+    <input class="search" type="search" placeholder="Search ${COMPOUNDS.length} compounds, brands or slang" data-act="exsearch" aria-label="Search compounds" autocomplete="off">
+    <div class="searchable">${KIND_GROUPS.map(([k, label]) => `<div class="kicker pad">${label}</div><div class="card list inset">
+      ${COMPOUNDS.filter((x) => x[1] === k).map(([name, , route, unit, , aliases]) => `<button class="exrow" data-act="pickcompound" data-n="${esc(name)}" data-search="${esc((name + ' ' + aliases + ' ' + k).toLowerCase())}">
+        <span>${esc(name)}<em> · ${esc(route)} · ${esc(unit)}</em></span>${have.has(name.toLowerCase()) ? '<span class="badge ok">Added</span>' : ''}</button>`).join('')}</div>`).join('')}</div>
+    <h4>Not listed?</h4>
+    <button class="btn ghost" data-act="customcompound" id="customcomp">Add a custom compound</button>`;
+}
+
+function compoundForm(c, hint = '') {
+  const isNew = !c || !c.id;
+  const oral = c && c.route && !['SubQ', 'IM'].includes(c.route);
+  c = { name: '', kind: 'peptide', dose: '', unit: 'mg', route: 'SubQ', sched: { type: 'interval', every: oral ? 1 : 7 }, time: '08:00', start: today(), end: '', mix: { type: 'none' }, supply: '', perVial: '', notes: '', ...(c || {}) };
   const sk = c.sched.type === 'prn' ? 'prn' : c.sched.type === 'weekdays' ? 'wd' : ['1', '2', '3', '7', '14'].includes(String(c.sched.every)) ? String(c.sched.every) : 'n';
   const opt = (arr, v) => arr.map((o) => { const [val, label] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(val)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(label)}</option>`; }).join('');
   return `<h2>${isNew ? 'Add compound' : 'Edit compound'}</h2>
+  ${hint ? `<p class="hint small">${esc(hint)}</p>` : ''}
+  ${isNew ? '<button class="link" data-act="newcompound">← Back to search</button>' : ''}
   <form class="cform" data-act="savecompound" data-id="${c.id || ''}" data-sched="${sk}" data-mix="${c.mix?.type || 'none'}" data-route="${esc(c.route)}">
     <label>Name<input name="name" value="${esc(c.name)}" placeholder="e.g. Testosterone cypionate" required></label>
     <label>Type<select name="kind">${opt(KINDS, c.kind)}</select></label>
@@ -841,7 +856,17 @@ document.addEventListener('click', (ev) => {
   const d = el.dataset; const c = d.id && compById(d.id);
   switch (d.act) {
     case 'stacktab': stackTab = d.k; render(); break;
-    case 'newcompound': openSheet(compoundForm()); break;
+    case 'newcompound': openSheet(compoundPicker()); setTimeout(() => $('#sheet .search')?.focus(), 250); break;
+    case 'pickcompound': {
+      const t = COMPOUNDS.find((x) => x[0] === d.n);
+      openSheet(compoundForm({ name: t[0], kind: t[1], route: t[2], unit: t[3], mix: { type: t[4] || 'none' } }, t[6]));
+      break;
+    }
+    case 'customcompound': {
+      const q = ($('#sheet .search')?.value || '').trim();
+      openSheet(compoundForm(q ? { name: q } : null));
+      break;
+    }
     case 'compound': openSheet(compoundSheet(d.id)); break;
     case 'editcompound': openSheet(compoundForm(c)); break;
     case 'quicklog': {
@@ -1119,13 +1144,25 @@ document.addEventListener('input', (ev) => {
   if (ev.target.dataset.act !== 'exsearch') return;
   const q = ev.target.value.trim().toLowerCase();
   const root = ev.target.nextElementSibling;
-  root.querySelectorAll('.exrow').forEach((r) => { r.hidden = q && !r.dataset.search.includes(q); });
+  const words = q.split(/[\s\-()/]+/).filter(Boolean);
+  root.querySelectorAll('.exrow').forEach((r) => {
+    const toks = r.dataset.search.split(/[\s\-()/]+/);
+    r.hidden = words.length > 0 && !words.every((w) => toks.some((t) => t.startsWith(w)));
+  });
   root.querySelectorAll('.list').forEach((l) => {
     const any = [...l.querySelectorAll('.exrow')].some((r) => !r.hidden);
     l.hidden = !any; l.previousElementSibling.hidden = !any;
   });
 });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') closeSheet(); });
+document.addEventListener('input', (ev) => {
+  const btn = document.getElementById('customcomp');
+  if (!btn || ev.target.dataset.act !== 'exsearch') return;
+  const q = ev.target.value.trim();
+  const any = [...document.querySelectorAll('#sheet .exrow')].some((r) => !r.hidden);
+  btn.textContent = q && !any ? `Add “${q}” as a custom compound` : 'Add a custom compound';
+  btn.className = q && !any ? 'btn' : 'btn ghost';
+});
 
 document.addEventListener('submit', (ev) => {
   const form = ev.target;
