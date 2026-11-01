@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '13'; // keep in step with VERSION in sw.js
+const APP_VERSION = '14'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -40,7 +40,6 @@ const DEFAULT = {
   compounds: [],
   doses: [],
   weights: [],
-  supplies: [],
 };
 let S;
 try { S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -510,7 +509,7 @@ const dateAdd = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDat
 const dow = (d) => new Date(d + 'T12:00').getDay();
 const fmtShort = (d) => { const x = new Date(d + 'T12:00'); return `${x.toLocaleDateString(undefined, { weekday: 'short' })} ${x.getDate()}`; };
 const nowTime = () => new Date().toTimeString().slice(0, 5);
-const fmtNum = (n) => (Math.round(n * 100) / 100).toString();
+const fmtNum = (n) => (Math.abs(n) < 1 ? Math.round(n * 1000) / 1000 : Math.round(n * 100) / 100).toString();
 
 // One-time migration: old guide checkboxes become protocol items.
 if (!S.protoMigrated) {
@@ -524,7 +523,17 @@ if (!S.protoMigrated) {
   }
   S.stack = []; S.protoMigrated = true; save();
 }
-S.compounds ||= []; S.doses ||= []; S.weights ||= []; S.supplies ||= [];
+S.compounds ||= []; S.doses ||= []; S.weights ||= [];
+if (S.supplies) {
+  // Earlier versions tracked syringe stock; keep each compound's syringe choice and drop the stock.
+  for (const c of S.compounds) {
+    const x = S.supplies.find((y) => y.id === c.syringe);
+    if (!x) continue;
+    c.syringe = x.type === 'insulin' ? { '0.3': 'ins30', '0.5': 'ins50', '1': 'ins100' }[String(x.size)] || '' : 'ml' + String(x.size);
+    if (!c.needle) c.needle = [x.gauge ? x.gauge + 'G' : '', x.length || ''].filter(Boolean).join(' ');
+  }
+  delete S.supplies; save();
+}
 
 const compById = (id) => S.compounds.find((c) => c.id === id);
 const schedText = (c) => {
@@ -569,22 +578,37 @@ function runwayDays(c) {
   return Math.floor((+c.supply / (+c.dose * perWeek(c))) * 7);
 }
 const concOf = (c) => (c.mix?.type === 'premix' ? +c.mix.conc : c.mix?.type === 'recon' && +c.mix.water > 0 ? +c.mix.vial / +c.mix.water : 0);
-/* syringe supplies */
-const SYR_SIZES = { insulin: ['0.3', '0.5', '1'], ml: ['1', '3', '5', '10'] };
-const syrById = (id) => S.supplies.find((x) => x.id === id);
-const syrName = (x) => (x.type === 'insulin' ? `${fmtNum(+x.size)} ml insulin (U-100)` : `${fmtNum(+x.size)} ml syringe`);
-const syrLabel = (x) => [syrName(x), x.gauge ? `${x.gauge}G` : '', x.length || ''].filter(Boolean).join(' · ');
-const syrPerWeek = (x) => S.compounds.filter((c) => !c.paused && isInj(c) && c.syringe === x.id).reduce((a, c) => a + perWeek(c), 0);
-const syrRunway = (x) => { const w = syrPerWeek(x); return w ? Math.floor((+x.count / w) * 7) : null; };
-const syrLow = (x) => +x.count <= (+x.low || 0) || (syrRunway(x) != null && syrRunway(x) < 7);
-
+/* syringes: pick the one you use so draws land on real markings */
+const SYRINGES = {
+  ins30: { label: 'Insulin U-100 · 0.3 ml (30 units)', short: '0.3 ml insulin syringe', units: true, cap: 30, tick: 0.5, major: 5 },
+  ins50: { label: 'Insulin U-100 · 0.5 ml (50 units)', short: '0.5 ml insulin syringe', units: true, cap: 50, tick: 1, major: 10 },
+  ins100: { label: 'Insulin U-100 · 1 ml (100 units)', short: '1 ml insulin syringe', units: true, cap: 100, tick: 2, major: 10 },
+  ml1: { label: '1 ml syringe (0.01 ml marks)', short: '1 ml syringe', units: false, cap: 1, tick: 0.01, major: 0.1 },
+  ml3: { label: '3 ml syringe (0.1 ml marks)', short: '3 ml syringe', units: false, cap: 3, tick: 0.1, major: 0.5 },
+  ml5: { label: '5 ml syringe (0.2 ml marks)', short: '5 ml syringe', units: false, cap: 5, tick: 0.2, major: 1 },
+  ml10: { label: '10 ml syringe (0.2 ml marks)', short: '10 ml syringe', units: false, cap: 10, tick: 0.2, major: 2 },
+};
+// Work out the draw for a volume on a given syringe: split if it won't fit, then round to the nearest marking.
+function planDraw(ml, key) {
+  const sp = SYRINGES[key];
+  if (!sp) return null;
+  const val = sp.units ? ml * 100 : ml;
+  const draws = Math.max(1, Math.ceil(val / sp.cap - 1e-9));
+  const per = val / draws;
+  const mark = +(Math.round(per / sp.tick) * sp.tick).toFixed(4);
+  return { sp, val, draws, per, mark, exact: Math.abs(mark - per) < 1e-6, ratio: (mark * draws) / val, unit: sp.units ? 'units' : 'ml' };
+}
 function drawText(c, amt = c.dose) {
   const conc = concOf(c);
   if (!(conc > 0) || !(+amt > 0) || !isInj(c)) return '';
-  const ml = +amt / conc, sy = syrById(c.syringe);
-  if (sy && sy.type === 'ml') return `Draw ${fmtNum(ml)} ml${ml > +sy.size ? ` (more than your ${fmtNum(+sy.size)} ml syringe holds)` : ''}`;
-  const u = ml * 100;
-  return `Draw ${fmtNum(ml)} ml · ${fmtNum(u)} units (U-100)${sy && u > +sy.size * 100 ? ` (more than your ${fmtNum(+sy.size * 100)}-unit syringe holds: split it)` : ''}`;
+  const ml = +amt / conc, pd = planDraw(ml, c.syringe);
+  if (!pd) return `Draw ${fmtNum(ml)} ml · ${fmtNum(ml * 100)} units (U-100)`;
+  if (pd.mark === 0) return `Dose is smaller than one marking on a ${pd.sp.short}: use a smaller syringe or more water`;
+  let t = pd.draws > 1 ? `${pd.draws} draws of ` : 'Draw ';
+  t += pd.exact ? `${fmtNum(pd.mark)} ${pd.unit}` : `to the ${fmtNum(pd.mark)}${pd.sp.units ? '-unit' : ' ml'} mark`;
+  if (pd.sp.units) t += ` (${fmtNum(pd.mark / 100)} ml)`;
+  if (!pd.exact) { const pct = Math.round((pd.ratio - 1) * 1000) / 10; t += ` → ${fmtNum(+amt * pd.ratio)} ${c.unit} (${pct > 0 ? '+' : ''}${pct}%)`; }
+  return t + ` on a ${pd.sp.short}`;
 }
 function suggestSite(c) {
   const sites = SITES[c.route]; if (!sites) return '';
@@ -596,16 +620,12 @@ function logDose(c, { amount = c.dose, site = isInj(c) ? suggestSite(c) : '', da
   const dose = { id: uid(), cid: c.id, date, time, amount, unit: c.unit, site, note };
   S.doses.push(dose);
   if (c.supply !== '' && c.supply != null && +amount > 0) c.supply = Math.max(0, +c.supply - +amount);
-  const sy = isInj(c) && syrById(c.syringe);
-  if (sy && +sy.count > 0) { sy.count = +sy.count - 1; dose.syringe = sy.id; }
   save(); return dose;
 }
 function removeDose(id) {
   const dose = S.doses.find((x) => x.id === id); if (!dose) return;
   const c = compById(dose.cid);
   if (c && c.supply !== '' && c.supply != null && +dose.amount > 0) c.supply = +c.supply + +dose.amount;
-  const sy = dose.syringe && syrById(dose.syringe);
-  if (sy) sy.count = +sy.count + 1;
   S.doses = S.doses.filter((x) => x.id !== id); save();
 }
 const kindColor = (k) => ({ peptide: 'var(--accent)', hormone: 'var(--red)', supplement: 'var(--ink)', medication: 'var(--steel)' })[k] || 'var(--label)';
@@ -630,7 +650,6 @@ function protocolToday() {
     </div>`;
   };
   return `${due.length ? due.map(row).join('') : '<p class="muted small">Nothing scheduled today.</p>'}
-    ${S.supplies.filter(syrLow).map((x) => `<p class="warn small missed">Low on syringes: ${fmtNum(+x.count)} left (${esc(syrLabel(x))}). <button class="link" data-act="supply" data-id="${x.id}">Restock</button></p>`).join('')}
     ${missed.map(([c, m]) => `<p class="warn small missed">Missed ${esc(c.name)} on ${esc(fmtDate(m))}. <button class="link" data-act="logmissed" data-id="${c.id}" data-d="${m}">Log it</button></p>`).join('')}
     ${soon.length ? `<p class="muted small soon">Coming up: ${soon.map(([c, n]) => `${esc(c.name)} ${DOW[dow(n)]}`).join(' · ')}</p>` : ''}`;
 }
@@ -689,20 +708,6 @@ V.protocol = () => `
     </button>`;
   }).join('')}
   <button class="btn" data-act="newcompound">+ Add compound</button>
-  <div class="kicker pad">Supplies</div>
-  ${S.supplies.map((x) => {
-    const rw = syrRunway(x), users = S.compounds.filter((c) => c.syringe === x.id);
-    return `<button class="card comp" data-act="supply" data-id="${x.id}" style="--k:var(--steel)">
-      <div class="row between"><span class="kicker">${x.type === 'insulin' ? 'SubQ syringes' : 'IM syringes'}</span>${syrLow(x) ? '<span class="badge wait">Low</span>' : ''}</div>
-      <h3>${esc(syrLabel(x))}</h3>
-      <p class="muted small">${users.length ? 'Used for ' + users.map((c) => esc(c.name)).join(', ') : 'Not linked to a compound yet. Pick it in a compound\u2019s Syringe field.'}</p>
-      <div class="stats">
-        <div><span>On hand</span><b>${fmtNum(+x.count)}</b></div>
-        <div><span>Lasts</span><b>${rw == null ? '—' : rw < 14 ? `${rw} days` : `${Math.round(rw / 7)} wks`}</b></div>
-        <div><span>Per week</span><b>${fmtNum(syrPerWeek(x))}</b></div>
-      </div></button>`;
-  }).join('')}
-  <button class="btn ghost" data-act="newsupply">+ Add syringes</button>
   <div class="kicker pad">Metrics</div>
   ${weightCard()}
   <button class="btn ghost" data-act="summary">Export summary for your doctor</button>
@@ -745,8 +750,8 @@ function compoundForm(c, hint = '') {
       <label>End (optional)<input name="end" type="date" value="${esc(c.end || '')}"></label></div>
     <fieldset class="f-inj"><legend>Syringe maths (optional)</legend>
       <p class="muted small" style="margin:0">Not sure? Use the calculator in Settings, then save it to this compound.</p>
-      <label>Syringe<select name="syringe"><option value="">Not tracked</option>${S.supplies.map((x) => `<option value="${x.id}" ${c.syringe === x.id ? 'selected' : ''}>${esc(syrLabel(x))}</option>`).join('')}</select></label>
-      ${S.supplies.length ? '' : '<p class="muted small" style="margin:0">Add your syringes under Stack → Supplies to track them per dose.</p>'}
+      <label>Syringe you use<select name="syringe"><option value="">Not set (show U-100 units)</option>${Object.entries(SYRINGES).map(([k, v]) => `<option value="${k}" ${c.syringe === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></label>
+      <label>Needle (optional)<input name="needle" value="${esc(c.needle || '')}" placeholder='e.g. 31G 5/16"'></label>
       <label>Concentration<select name="mixtype" data-act="formsync">${opt([['none', 'Skip'], ['premix', 'Pre-mixed (e.g. oil)'], ['recon', 'Reconstituted vial']], c.mix?.type || 'none')}</select></label>
       <label class="f-premix">Strength per ml<input name="conc" inputmode="decimal" value="${esc(c.mix?.conc || '')}" placeholder="e.g. 200 (in your dose unit per ml)"></label>
       <div class="grid2 f-recon"><label>Amount in vial<input name="vial" inputmode="decimal" value="${esc(c.mix?.vial || '')}" placeholder="e.g. 10"></label>
@@ -775,6 +780,8 @@ function compoundSheet(id) {
     <h2>${esc(c.name)}</h2>
     <p class="muted">${esc([doseText(c), schedText(c), c.time].filter(Boolean).join(' · '))}</p>
     ${drawText(c) ? `<p class="hint small">${esc(drawText(c))}</p>` : ''}
+    ${(() => { const conc = concOf(c), pd = conc > 0 && +c.dose > 0 && isInj(c) ? planDraw(+c.dose / conc, c.syringe) : null; return pd && pd.mark > 0 ? syringeSVG(pd.mark, pd.sp) : ''; })()}
+    ${isInj(c) ? `<p class="muted small">Syringe: ${c.syringe && SYRINGES[c.syringe] ? esc(SYRINGES[c.syringe].label) : 'not set. Pick yours under Edit for exact markings'}${c.needle ? ' · needle ' + esc(c.needle) : ''}</p>` : ''}
     <div class="stats">
       <div><span>Next</span><b>${c.paused ? 'Paused' : nd ? (nd === today() ? 'Today' : esc(fmtShort(nd))) : '—'}</b></div>
       <div><span>28-day</span><b>${ad != null ? ad + '%' : '—'}</b></div>
@@ -801,29 +808,6 @@ function compoundSheet(id) {
     ${c.notes ? `<p class="muted small">${esc(c.notes)}</p>` : ''}`;
 }
 
-function supplyForm(x) {
-  const isNew = !x;
-  x ||= { type: 'insulin', size: '0.5', gauge: '31', length: '5/16"', count: '', low: '10', box: '100' };
-  return `<h2>${isNew ? 'Add syringes' : 'Syringes'}</h2>
-  ${isNew ? '' : `<p class="muted">${esc(syrLabel(x))} · ${fmtNum(+x.count)} on hand</p>
-    <div class="stack-btns"><button class="btn" data-act="addbox" data-id="${x.id}">+ Add a box (+${fmtNum(+x.box || 100)})</button></div><h4>Edit</h4>`}
-  <form class="cform" data-act="savesupply" data-id="${x.id || ''}" data-type="${x.type}">
-    <label>Type<select name="type" data-act="supsync">
-      <option value="insulin" ${x.type === 'insulin' ? 'selected' : ''}>Insulin syringe, U-100 (SubQ)</option>
-      <option value="ml" ${x.type === 'ml' ? 'selected' : ''}>Syringe with ml markings (IM)</option></select></label>
-    <label class="f-ins">Size<select name="size_ins">${SYR_SIZES.insulin.map((v) => `<option value="${v}" ${x.type === 'insulin' && String(x.size) === v ? 'selected' : ''}>${v} ml (${+v * 100} units)</option>`).join('')}</select></label>
-    <label class="f-ml">Size<select name="size_ml">${SYR_SIZES.ml.map((v) => `<option value="${v}" ${x.type === 'ml' && String(x.size) === v ? 'selected' : ''}>${v} ml</option>`).join('')}</select></label>
-    <div class="grid2"><label>Gauge<input name="gauge" inputmode="numeric" value="${esc(x.gauge || '')}" placeholder="e.g. 31"></label>
-      <label>Needle length<input name="length" list="lengths" value="${esc(x.length || '')}" placeholder='e.g. 5/16"'></label></div>
-    <datalist id="lengths"><option value='5/16"'><option value='1/2"'><option value='5/8"'><option value='1"'><option value='1.5"'></datalist>
-    <div class="grid2"><label>On hand<input name="count" inputmode="numeric" value="${esc(x.count)}" placeholder="e.g. 100" required></label>
-      <label>Warn me below<input name="low" inputmode="numeric" value="${esc(x.low ?? '')}" placeholder="e.g. 10"></label></div>
-    <label>Box size (for quick restock)<input name="box" inputmode="numeric" value="${esc(x.box ?? '')}" placeholder="e.g. 100"></label>
-    <button class="btn${isNew ? '' : ' ghost'}">${isNew ? 'Add syringes' : 'Save changes'}</button>
-    ${isNew ? '' : `<button type="button" class="btn ghost danger" data-act="delsupply" data-id="${x.id}">Delete</button>`}
-  </form>`;
-}
-
 function saveCompound(form) {
   const f = new FormData(form);
   const g = (k) => String(f.get(k) ?? '').trim();
@@ -834,7 +818,7 @@ function saveCompound(form) {
     name: g('name'), kind: g('kind'), dose: g('dose'), unit: g('unit'), route: g('route'), sched, time: g('time') || '08:00',
     start: g('start') || today(), end: g('end'),
     mix: { type: g('mixtype') || 'none', conc: g('conc'), vial: g('vial'), water: g('water') },
-    syringe: g('syringe'),
+    syringe: g('syringe'), needle: g('needle'),
     supply: g('supply') === '' ? '' : +g('supply'), perVial: g('perVial') === '' ? '' : +g('perVial'), notes: g('notes'),
   };
   if (!data.name) return;
@@ -935,32 +919,8 @@ document.addEventListener('change', (ev) => {
   const el = ev.target;
   if (el.dataset.act === 'formsync') syncForm(el.form);
 });
-document.addEventListener('click', (ev) => {
-  const el = ev.target.closest('[data-act]'); if (!el) return;
-  const d = el.dataset, x = d.id && syrById(d.id);
-  if (d.act === 'newsupply') openSheet(supplyForm());
-  else if (d.act === 'supply') openSheet(supplyForm(x));
-  else if (d.act === 'addbox') { x.count = +x.count + (+x.box || 100); save(); openSheet(supplyForm(x)); render(); toast(`${fmtNum(+x.count)} syringes on hand.`); }
-  else if (d.act === 'delsupply' && confirm('Delete these syringes from your supplies?')) {
-    S.supplies = S.supplies.filter((y) => y.id !== x.id);
-    S.compounds.forEach((c) => { if (c.syringe === x.id) c.syringe = ''; });
-    save(); closeSheet(); render();
-  }
-});
-document.addEventListener('change', (ev) => { if (ev.target.dataset.act === 'supsync') ev.target.form.dataset.type = ev.target.value; });
-
 document.addEventListener('submit', (ev) => {
   const form = ev.target; const act = form.dataset.act;
-  if (act === 'savesupply') {
-    ev.preventDefault();
-    const f = new FormData(form), g = (k) => String(f.get(k) ?? '').trim(), type = g('type');
-    const data = { type, size: type === 'insulin' ? g('size_ins') : g('size_ml'), gauge: g('gauge').replace(/g$/i, ''), length: g('length'), count: +g('count') || 0, low: g('low') === '' ? '' : +g('low'), box: +g('box') || '' };
-    const id = form.dataset.id;
-    if (id) Object.assign(syrById(id), data); else S.supplies.push({ id: uid(), ...data });
-    save(); closeSheet(); render();
-    toast(id ? 'Saved.' : 'Syringes added. Link them in each compound\u2019s Syringe field.');
-    return;
-  }
   if (act === 'savecompound') { ev.preventDefault(); saveCompound(form); }
   else if (act === 'logdose') {
     ev.preventDefault();
@@ -977,7 +937,7 @@ document.addEventListener('submit', (ev) => {
 });
 
 /* ---------- reconstitution & dosage calculator ---------- */
-const CALC_DEFAULT = { mode: 'recon', vial: '10', vialUnit: 'mg', water: '2', conc: '200', concUnit: 'mg', dose: '2', doseUnit: 'mg', syringe: '100', units: '' };
+const CALC_DEFAULT = { mode: 'recon', vial: '10', vialUnit: 'mg', water: '2', conc: '200', concUnit: 'mg', dose: '2', doseUnit: 'mg', syringe: 'ins100', units: '' };
 const toBase = (v, u) => (u === 'mg' ? +v * 1000 : +v); // mg → mcg; mcg and IU stay as-is
 const fromBase = (v, u) => (u === 'mg' ? v / 1000 : v);
 const unitClash = (a, b) => (a === 'IU') !== (b === 'IU');
@@ -993,14 +953,15 @@ function calcResult(k) {
     if (!(+k.conc > 0)) return { err: 'Enter the strength printed on the vial.' };
     concBase = toBase(k.conc, k.concUnit);
   }
-  const out = { concBase, total, cap: +k.syringe || 100 };
+  const sp = SYRINGES[k.syringe] || SYRINGES.ins100;
+  const out = { concBase, total, sp };
   if (+k.dose > 0) {
     const doseBase = toBase(k.dose, k.doseUnit);
     out.ml = doseBase / concBase; out.units = out.ml * 100;
     if (total) out.perVial = total / doseBase;
     if (total) out.roundWater = [10, 20, 25, 50].map((u) => [u, (total * u) / (doseBase * 100)]).filter(([, w]) => w >= 0.5 && w <= 5);
   }
-  if (+k.units > 0) out.rev = fromBase((+k.units / 100) * concBase, k.doseUnit);
+  if (+k.units > 0) out.rev = fromBase((sp.units ? +k.units / 100 : +k.units) * concBase, k.doseUnit);
   return out;
 }
 
@@ -1009,23 +970,23 @@ const showAmt = (base, u) => {
   return base >= 1000 ? `${fmtNum(base / 1000)} mg` : `${fmtNum(base)} mcg`;
 };
 
-function syringeSVG(units, cap) {
-  const W = 320, x0 = 18, x1 = 292, over = units > cap;
-  const fill = Math.min(units, cap) / cap * (x1 - x0);
-  const step = cap <= 30 ? 5 : cap <= 50 ? 5 : 10;
-  const ticks = [];
-  for (let u = 0; u <= cap; u += step) {
-    const x = x0 + (u / cap) * (x1 - x0), major = u % (step * 2) === 0;
-    ticks.push(`<line x1="${x}" x2="${x}" y1="20" y2="${major ? 32 : 27}" stroke="var(--well)" stroke-width="1.5"/>`);
-    if (major) ticks.push(`<text x="${x}" y="58" text-anchor="middle" font-size="9" fill="var(--label)" font-family="IBM Plex Mono">${u}</text>`);
+function syringeSVG(value, sp) {
+  sp ||= SYRINGES.ins100;
+  const W = 320, x0 = 18, x1 = 292, cap = sp.cap, over = value > cap + 1e-9;
+  const fill = (Math.min(value, cap) / cap) * (x1 - x0);
+  const minor = sp.major / 5, n = Math.round(cap / minor), ticks = [];
+  for (let i = 0; i <= n; i++) {
+    const v = i * minor, x = x0 + (v / cap) * (x1 - x0), major = i % 5 === 0;
+    ticks.push(`<line x1="${x}" x2="${x}" y1="20" y2="${major ? 32 : 26}" stroke="var(--well)" stroke-width="${major ? 1.6 : 1}"/>`);
+    if (major) ticks.push(`<text x="${x}" y="58" text-anchor="middle" font-size="9" fill="var(--label)" font-family="IBM Plex Mono">${fmtNum(v)}</text>`);
   }
-  return `<svg class="syringe" viewBox="0 0 ${W} 64" role="img" aria-label="Syringe filled to ${fmtNum(units)} units">
+  return `<svg class="syringe" viewBox="0 0 ${W} 64" role="img" aria-label="${esc(sp.short)} filled to ${fmtNum(value)} ${sp.units ? 'units' : 'ml'}">
     <rect x="${x0}" y="18" width="${x1 - x0}" height="26" rx="4" fill="var(--ink)" opacity=".92"/>
     <rect x="${x0}" y="18" width="${fill}" height="26" rx="4" fill="${over ? 'var(--red)' : 'var(--accent)'}" opacity=".85"/>
     ${ticks.join('')}
     <rect x="2" y="27" width="${x0 - 2}" height="8" fill="var(--label)"/>
     <rect x="${x0 + fill - 3}" y="14" width="6" height="34" rx="2" fill="var(--well)"/>
-    <rect x="${x0 + fill}" y="28" width="${W - x0 - fill - 6}" height="6" fill="var(--welltext)" opacity=".6"/>
+    <rect x="${x0 + fill}" y="28" width="${Math.max(0, W - x0 - fill - 6)}" height="6" fill="var(--welltext)" opacity=".6"/>
     <rect x="${W - 8}" y="16" width="6" height="30" rx="2" fill="var(--welltext)"/>
   </svg>`;
 }
@@ -1039,29 +1000,35 @@ function calcOutput() {
       <div><span>Per unit</span><b>${showAmt(r.concBase / 100, cu)}</b></div>
       <div><span>Per 10 units</span><b>${showAmt(r.concBase / 10, cu)}</b></div>
     </div>`];
-  if (r.units != null) {
-    const draws = Math.ceil(r.units / r.cap);
+  if (r.ml != null) {
+    const pd = planDraw(r.ml, k.syringe) || planDraw(r.ml, 'ins100');
+    const pct = Math.round((pd.ratio - 1) * 1000) / 10;
     parts.push(`<div class="drawbox">
-      <span class="kicker">Draw</span>
-      <div class="drawnum">${fmtNum(r.units)} <small>units</small></div>
-      <p class="muted">${fmtNum(r.ml)} ml on a U-100 insulin syringe${r.perVial ? ` · about ${Math.floor(r.perVial)} dose${Math.floor(r.perVial) === 1 ? '' : 's'} per vial` : ''}</p>
-      ${syringeSVG(r.units, r.cap)}
-      ${r.units > r.cap ? `<p class="warn small">That's more than a ${r.cap}-unit syringe holds: split it into ${draws} draws, or use a bigger syringe.</p>` : ''}
-      ${r.units < 3 ? `<p class="warn small">Very small volume, which is hard to measure accurately. Adding more water makes each unit hold less.</p>` : ''}
+      <span class="kicker">Draw${pd.draws > 1 ? ` · ${pd.draws} syringes` : ''}</span>
+      <div class="drawnum">${fmtNum(pd.mark)} <small>${pd.unit}</small></div>
+      <p class="muted">${pd.sp.units ? `${fmtNum(pd.mark / 100)} ml on a ` : 'on a '}${esc(pd.sp.short)}${r.perVial ? ` · about ${Math.floor(r.perVial)} dose${Math.floor(r.perVial) === 1 ? '' : 's'} per vial` : ''}</p>
+      ${pd.mark > 0 ? syringeSVG(pd.mark, pd.sp) : ''}
+      ${pd.draws > 1 ? `<p class="warn small">Too much for one ${esc(pd.sp.short)}: do ${pd.draws} draws of ${fmtNum(pd.mark)} ${pd.unit}, or pick a bigger syringe.</p>` : ''}
+      ${pd.mark === 0 ? `<p class="warn small">The dose is smaller than one marking on this syringe. Use a smaller syringe or more water.</p>`
+        : !pd.exact ? `<p class="small hint">Exact volume is ${fmtNum(pd.per)} ${pd.unit}, between markings. Drawing to the ${fmtNum(pd.mark)}${pd.sp.units ? '-unit' : ' ml'} mark gives ${fmtNum(+k.dose * pd.ratio)} ${esc(k.doseUnit)} (${pct > 0 ? '+' : ''}${pct}%).</p>`
+        : `<p class="small hint">Lands exactly on a marking.</p>`}
+      ${pd.sp.units && r.units < 3 && pd.mark > 0 ? `<p class="warn small">Very small volume, which is hard to measure accurately. Adding more water makes each unit hold less.</p>` : ''}
     </div>`);
-    if (r.roundWater && r.roundWater.length) parts.push(`<p class="muted small">For a round number on the syringe, add: ${r.roundWater.map(([u, w]) => `<b>${fmtNum(w)} ml</b> → ${u} units`).join(' · ')}</p>`);
+    if (pd.sp.units && r.roundWater && r.roundWater.length) parts.push(`<p class="muted small">For a round number on the syringe, add: ${r.roundWater.map(([u, w]) => `<b>${fmtNum(w)} ml</b> → ${u} units`).join(' · ')}</p>`);
   }
-  if (r.rev != null) parts.push(`<p class="hint">${fmtNum(+k.units)} units = <b>${fmtNum(r.rev)} ${esc(k.doseUnit)}</b></p>`);
+  if (r.rev != null) parts.push(`<p class="hint">${fmtNum(+k.units)} ${r.sp.units ? 'units' : 'ml'} = <b>${fmtNum(r.rev)} ${esc(k.doseUnit)}</b></p>`);
   return parts.join('');
 }
 
 V.calc = (cid) => {
   S.calc = { ...CALC_DEFAULT, ...(S.calc || {}) };
+  if (!SYRINGES[S.calc.syringe]) S.calc.syringe = { 30: 'ins30', 50: 'ins50' }[S.calc.syringe] || 'ins100';
   const c = cid && compById(cid);
   if (c && !S.calcFrom) {
     // prefill from a compound in the protocol
     const u = ['mg', 'mcg', 'IU'].includes(c.unit) ? c.unit : 'mg';
     Object.assign(S.calc, { dose: c.dose || S.calc.dose, doseUnit: u, vialUnit: u, concUnit: u });
+    if (SYRINGES[c.syringe]) S.calc.syringe = c.syringe;
     if (c.mix?.type === 'recon') Object.assign(S.calc, { mode: 'recon', vial: c.mix.vial || S.calc.vial, water: c.mix.water || S.calc.water });
     if (c.mix?.type === 'premix') Object.assign(S.calc, { mode: 'premix', conc: c.mix.conc || S.calc.conc });
     S.calcFrom = cid;
@@ -1079,16 +1046,16 @@ V.calc = (cid) => {
     : `<label>Strength printed on vial (per ml)</label><div class="unitrow"><input name="conc" inputmode="decimal" value="${esc(k.conc)}" data-act="calc">${uSel('concUnit', k.concUnit)}</div>`}
     <label>Dose you want</label><div class="unitrow"><input name="dose" inputmode="decimal" value="${esc(k.dose)}" data-act="calc">${uSel('doseUnit', k.doseUnit)}</div>
     <label>Syringe size</label>
-    <select name="syringe" data-act="calc">${[['30', '0.3 ml (30 units)'], ['50', '0.5 ml (50 units)'], ['100', '1 ml (100 units)']].map(([v, n]) => `<option value="${v}" ${String(k.syringe) === v ? 'selected' : ''}>${n}</option>`).join('')}</select>
+    <select name="syringe" data-act="calc">${Object.entries(SYRINGES).map(([v, x]) => `<option value="${v}" ${k.syringe === v ? 'selected' : ''}>${esc(x.label)}</option>`).join('')}</select>
   </section>
   <section class="card" id="calcout">${calcOutput()}</section>
   <section class="card calc">
     <h3>Reverse: what's in my syringe?</h3>
-    <label>Units drawn</label><input name="units" inputmode="decimal" value="${esc(k.units)}" placeholder="e.g. 20" data-act="calc">
+    <label>${SYRINGES[k.syringe].units ? 'Units drawn' : 'Ml drawn'}</label><input name="units" inputmode="decimal" value="${esc(k.units)}" placeholder="e.g. 20" data-act="calc">
     <p class="muted small">Uses the vial details above.</p>
   </section>
   ${injectables.length ? `<section class="card calc"><h3>Save to a compound</h3>
-    <p class="muted small">Stores this vial's strength on the compound, so Today and the log show the draw for every dose.</p>
+    <p class="muted small">Stores this vial's strength and syringe on the compound, so Today and the log show the draw for every dose.</p>
     <div class="unitrow"><select id="calcapply">${injectables.map((x) => `<option value="${x.id}" ${x.id === (cid || S.calcFrom) ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
     <button class="btn ghost" data-act="calcapply">Save</button></div></section>` : ''}
   <p class="muted small pad">Assumes a standard U-100 insulin syringe (100 units = 1 ml). The calculator does the maths for the numbers you enter; it doesn't recommend doses. Double-check your vial's label.</p>`;
@@ -1097,6 +1064,7 @@ V.calc = (cid) => {
 document.addEventListener('input', (ev) => {
   const el = ev.target; if (el.dataset.act !== 'calc') return;
   S.calc[el.name] = el.value.trim(); save();
+  if (el.name === 'syringe') { render(); return; }
   const out = document.getElementById('calcout'); if (out) out.innerHTML = calcOutput();
 });
 document.addEventListener('click', (ev) => {
@@ -1109,6 +1077,7 @@ document.addEventListener('click', (ev) => {
     if (unitClash(c.unit, k.doseUnit)) { toast(`${c.name} is dosed in ${c.unit}; use matching units.`); return; }
     if (k.mode === 'recon') c.mix = { type: 'recon', vial: String(fromBase(toBase(k.vial, k.vialUnit), c.unit)), water: k.water };
     else c.mix = { type: 'premix', conc: String(fromBase(toBase(k.conc, k.concUnit), c.unit)) };
+    c.syringe = k.syringe;
     save(); toast(`Saved to ${c.name}: ${drawText(c) || 'strength stored'}.`);
   }
 });
