@@ -24,6 +24,7 @@ const CREED = [
 
 /* ---------- state ---------- */
 const DEFAULT = {
+  calc: null,
   settings: { unit: 'lb', bodyweight: 180, diet: 'mentzer', goal: 'bulk', activity: 15 },
   activeProgram: 'heavy-duty',
   nextDay: {},
@@ -486,6 +487,10 @@ V.settings = () => `
     <div class="seg">${['lb', 'kg'].map((u) => `<button class="${S.settings.unit === u ? 'on' : ''}" data-act="setunit" data-u="${u}">${u}</button>`).join('')}</div>
     <p class="muted small">Changing units relabels your logs. It does not convert past numbers.</p>
   </section>
+  <button class="card tool" data-act="opencalc">
+    <div class="row between"><h3>Reconstitution & dose calculator</h3>${IC.arrow}</div>
+    <p class="muted small">Vial + water + dose → how many units to draw.</p>
+  </button>
   <section class="card">
     <div class="kicker">Your data</div>
     <p class="muted small">Everything is stored on this device only. Export a backup now and then.</p>
@@ -716,6 +721,7 @@ function compoundForm(c) {
     <div class="grid2"><label>Start<input name="start" type="date" value="${esc(c.start)}" required></label>
       <label>End (optional)<input name="end" type="date" value="${esc(c.end || '')}"></label></div>
     <fieldset class="f-inj"><legend>Syringe maths (optional)</legend>
+      <p class="muted small" style="margin:0">Not sure? Use the calculator in Settings, then save it to this compound.</p>
       <label>Concentration<select name="mixtype" data-act="formsync">${opt([['none', 'Skip'], ['premix', 'Pre-mixed (e.g. oil)'], ['recon', 'Reconstituted vial']], c.mix?.type || 'none')}</select></label>
       <label class="f-premix">Strength per ml<input name="conc" inputmode="decimal" value="${esc(c.mix?.conc || '')}" placeholder="e.g. 200 (in your dose unit per ml)"></label>
       <div class="grid2 f-recon"><label>Amount in vial<input name="vial" inputmode="decimal" value="${esc(c.mix?.vial || '')}" placeholder="e.g. 10"></label>
@@ -763,6 +769,7 @@ function compoundSheet(id) {
     <div class="stack-btns">
       ${+c.perVial > 0 ? `<button class="btn ghost" data-act="addvial" data-id="${c.id}">+ Add vial / bottle (+${fmtNum(+c.perVial)} ${esc(c.unit)})</button>` : ''}
       ${c.sched.type !== 'prn' ? `<button class="btn ghost" data-act="ics" data-id="${c.id}">Add reminders to my calendar</button>` : ''}
+      ${isInj(c) ? `<button class="btn ghost" data-act="opencalc" data-id="${c.id}">Dose calculator</button>` : ''}
       <button class="btn ghost" data-act="editcompound" data-id="${c.id}">Edit</button>
       <button class="btn ghost" data-act="pausecompound" data-id="${c.id}">${c.paused ? 'Resume' : 'Pause'}</button>
     </div>
@@ -890,6 +897,143 @@ document.addEventListener('submit', (ev) => {
     if (!(w > 0)) return;
     S.weights = S.weights.filter((x) => x.date !== today()); S.weights.push({ date: today(), w });
     S.settings.bodyweight = w; save(); render(); toast('Weigh-in logged.');
+  }
+});
+
+/* ---------- reconstitution & dosage calculator ---------- */
+const CALC_DEFAULT = { mode: 'recon', vial: '10', vialUnit: 'mg', water: '2', conc: '200', concUnit: 'mg', dose: '2', doseUnit: 'mg', syringe: '100', units: '' };
+const toBase = (v, u) => (u === 'mg' ? +v * 1000 : +v); // mg → mcg; mcg and IU stay as-is
+const fromBase = (v, u) => (u === 'mg' ? v / 1000 : v);
+const unitClash = (a, b) => (a === 'IU') !== (b === 'IU');
+
+function calcResult(k) {
+  const amtUnit = k.mode === 'recon' ? k.vialUnit : k.concUnit;
+  if (unitClash(amtUnit, k.doseUnit)) return { err: 'IU can’t be converted to mg or mcg. Use IU for both the vial and the dose.' };
+  let concBase, total = null;
+  if (k.mode === 'recon') {
+    if (!(+k.vial > 0) || !(+k.water > 0)) return { err: 'Enter the amount in the vial and the water you add.' };
+    total = toBase(k.vial, k.vialUnit); concBase = total / +k.water;
+  } else {
+    if (!(+k.conc > 0)) return { err: 'Enter the strength printed on the vial.' };
+    concBase = toBase(k.conc, k.concUnit);
+  }
+  const out = { concBase, total, cap: +k.syringe || 100 };
+  if (+k.dose > 0) {
+    const doseBase = toBase(k.dose, k.doseUnit);
+    out.ml = doseBase / concBase; out.units = out.ml * 100;
+    if (total) out.perVial = total / doseBase;
+    if (total) out.roundWater = [10, 20, 25, 50].map((u) => [u, (total * u) / (doseBase * 100)]).filter(([, w]) => w >= 0.5 && w <= 5);
+  }
+  if (+k.units > 0) out.rev = fromBase((+k.units / 100) * concBase, k.doseUnit);
+  return out;
+}
+
+const showAmt = (base, u) => {
+  if (u === 'IU') return `${fmtNum(base)} IU`;
+  return base >= 1000 ? `${fmtNum(base / 1000)} mg` : `${fmtNum(base)} mcg`;
+};
+
+function syringeSVG(units, cap) {
+  const W = 320, x0 = 18, x1 = 292, over = units > cap;
+  const fill = Math.min(units, cap) / cap * (x1 - x0);
+  const step = cap <= 30 ? 5 : cap <= 50 ? 5 : 10;
+  const ticks = [];
+  for (let u = 0; u <= cap; u += step) {
+    const x = x0 + (u / cap) * (x1 - x0), major = u % (step * 2) === 0;
+    ticks.push(`<line x1="${x}" x2="${x}" y1="20" y2="${major ? 32 : 27}" stroke="var(--well)" stroke-width="1.5"/>`);
+    if (major) ticks.push(`<text x="${x}" y="58" text-anchor="middle" font-size="9" fill="var(--label)" font-family="IBM Plex Mono">${u}</text>`);
+  }
+  return `<svg class="syringe" viewBox="0 0 ${W} 64" role="img" aria-label="Syringe filled to ${fmtNum(units)} units">
+    <rect x="${x0}" y="18" width="${x1 - x0}" height="26" rx="4" fill="var(--ink)" opacity=".92"/>
+    <rect x="${x0}" y="18" width="${fill}" height="26" rx="4" fill="${over ? 'var(--red)' : 'var(--accent)'}" opacity=".85"/>
+    ${ticks.join('')}
+    <rect x="2" y="27" width="${x0 - 2}" height="8" fill="var(--label)"/>
+    <rect x="${x0 + fill - 3}" y="14" width="6" height="34" rx="2" fill="var(--well)"/>
+    <rect x="${x0 + fill}" y="28" width="${W - x0 - fill - 6}" height="6" fill="var(--welltext)" opacity=".6"/>
+    <rect x="${W - 8}" y="16" width="6" height="30" rx="2" fill="var(--welltext)"/>
+  </svg>`;
+}
+
+function calcOutput() {
+  const k = S.calc, r = calcResult(k);
+  if (r.err) return `<p class="warn small">${esc(r.err)}</p>`;
+  const cu = k.mode === 'recon' ? k.vialUnit : k.concUnit;
+  const parts = [`<div class="stats">
+      <div><span>Strength</span><b>${showAmt(r.concBase, cu)}/ml</b></div>
+      <div><span>Per unit</span><b>${showAmt(r.concBase / 100, cu)}</b></div>
+      <div><span>Per 10 units</span><b>${showAmt(r.concBase / 10, cu)}</b></div>
+    </div>`];
+  if (r.units != null) {
+    const draws = Math.ceil(r.units / r.cap);
+    parts.push(`<div class="drawbox">
+      <span class="kicker">Draw</span>
+      <div class="drawnum">${fmtNum(r.units)} <small>units</small></div>
+      <p class="muted">${fmtNum(r.ml)} ml on a U-100 insulin syringe${r.perVial ? ` · about ${Math.floor(r.perVial)} dose${Math.floor(r.perVial) === 1 ? '' : 's'} per vial` : ''}</p>
+      ${syringeSVG(r.units, r.cap)}
+      ${r.units > r.cap ? `<p class="warn small">That's more than a ${r.cap}-unit syringe holds: split it into ${draws} draws, or use a bigger syringe.</p>` : ''}
+      ${r.units < 3 ? `<p class="warn small">Very small volume, which is hard to measure accurately. Adding more water makes each unit hold less.</p>` : ''}
+    </div>`);
+    if (r.roundWater && r.roundWater.length) parts.push(`<p class="muted small">For a round number on the syringe, add: ${r.roundWater.map(([u, w]) => `<b>${fmtNum(w)} ml</b> → ${u} units`).join(' · ')}</p>`);
+  }
+  if (r.rev != null) parts.push(`<p class="hint">${fmtNum(+k.units)} units = <b>${fmtNum(r.rev)} ${esc(k.doseUnit)}</b></p>`);
+  return parts.join('');
+}
+
+V.calc = (cid) => {
+  S.calc = { ...CALC_DEFAULT, ...(S.calc || {}) };
+  const c = cid && compById(cid);
+  if (c && !S.calcFrom) {
+    // prefill from a compound in the protocol
+    const u = ['mg', 'mcg', 'IU'].includes(c.unit) ? c.unit : 'mg';
+    Object.assign(S.calc, { dose: c.dose || S.calc.dose, doseUnit: u, vialUnit: u, concUnit: u });
+    if (c.mix?.type === 'recon') Object.assign(S.calc, { mode: 'recon', vial: c.mix.vial || S.calc.vial, water: c.mix.water || S.calc.water });
+    if (c.mix?.type === 'premix') Object.assign(S.calc, { mode: 'premix', conc: c.mix.conc || S.calc.conc });
+    S.calcFrom = cid;
+  }
+  const k = S.calc;
+  const uSel = (name, v) => `<select name="${name}" data-act="calc">${['mg', 'mcg', 'IU'].map((u) => `<option ${u === v ? 'selected' : ''}>${u}</option>`).join('')}</select>`;
+  const injectables = S.compounds.filter((x) => isInj(x) && ['mg', 'mcg', 'IU'].includes(x.unit));
+  return `
+  <header class="top"><button class="icon" data-act="go" data-v="${cid ? 'stack' : 'settings'}" aria-label="Back">${IC.back}</button><h1 class="sm">Dose calculator</h1></header>
+  <div class="seg">${[['recon', 'Reconstitute powder'], ['premix', 'Pre-mixed vial']].map(([m, n]) => `<button class="${k.mode === m ? 'on' : ''}" data-act="calcmode" data-m="${m}">${n}</button>`).join('')}</div>
+  <section class="card calc" style="margin-top:12px">
+    ${k.mode === 'recon' ? `
+      <label>Amount in vial</label><div class="unitrow"><input name="vial" inputmode="decimal" value="${esc(k.vial)}" data-act="calc">${uSel('vialUnit', k.vialUnit)}</div>
+      <label>Bacteriostatic water added (ml)</label><input name="water" inputmode="decimal" value="${esc(k.water)}" data-act="calc">`
+    : `<label>Strength printed on vial (per ml)</label><div class="unitrow"><input name="conc" inputmode="decimal" value="${esc(k.conc)}" data-act="calc">${uSel('concUnit', k.concUnit)}</div>`}
+    <label>Dose you want</label><div class="unitrow"><input name="dose" inputmode="decimal" value="${esc(k.dose)}" data-act="calc">${uSel('doseUnit', k.doseUnit)}</div>
+    <label>Syringe size</label>
+    <select name="syringe" data-act="calc">${[['30', '0.3 ml (30 units)'], ['50', '0.5 ml (50 units)'], ['100', '1 ml (100 units)']].map(([v, n]) => `<option value="${v}" ${String(k.syringe) === v ? 'selected' : ''}>${n}</option>`).join('')}</select>
+  </section>
+  <section class="card" id="calcout">${calcOutput()}</section>
+  <section class="card calc">
+    <h3>Reverse: what's in my syringe?</h3>
+    <label>Units drawn</label><input name="units" inputmode="decimal" value="${esc(k.units)}" placeholder="e.g. 20" data-act="calc">
+    <p class="muted small">Uses the vial details above.</p>
+  </section>
+  ${injectables.length ? `<section class="card calc"><h3>Save to a compound</h3>
+    <p class="muted small">Stores this vial's strength on the compound, so Today and the log show the draw for every dose.</p>
+    <div class="unitrow"><select id="calcapply">${injectables.map((x) => `<option value="${x.id}" ${x.id === (cid || S.calcFrom) ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+    <button class="btn ghost" data-act="calcapply">Save</button></div></section>` : ''}
+  <p class="muted small pad">Assumes a standard U-100 insulin syringe (100 units = 1 ml). The calculator does the maths for the numbers you enter; it doesn't recommend doses. Double-check your vial's label.</p>`;
+};
+
+document.addEventListener('input', (ev) => {
+  const el = ev.target; if (el.dataset.act !== 'calc') return;
+  S.calc[el.name] = el.value.trim(); save();
+  const out = document.getElementById('calcout'); if (out) out.innerHTML = calcOutput();
+});
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  if (el.dataset.act === 'calcmode') { S.calc.mode = el.dataset.m; save(); render(); }
+  else if (el.dataset.act === 'opencalc') { S.calcFrom = null; closeSheet(); go('calc', el.dataset.id || null); }
+  else if (el.dataset.act === 'calcapply') {
+    const c = compById(document.getElementById('calcapply').value); const k = S.calc;
+    const r = calcResult(k); if (r.err) { toast(r.err); return; }
+    if (unitClash(c.unit, k.doseUnit)) { toast(`${c.name} is dosed in ${c.unit}; use matching units.`); return; }
+    if (k.mode === 'recon') c.mix = { type: 'recon', vial: String(fromBase(toBase(k.vial, k.vialUnit), c.unit)), water: k.water };
+    else c.mix = { type: 'premix', conc: String(fromBase(toBase(k.conc, k.concUnit), c.unit)) };
+    save(); toast(`Saved to ${c.name}: ${drawText(c) || 'strength stored'}.`);
   }
 });
 

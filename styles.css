@@ -254,3 +254,16 @@ label.check { text-transform: none; letter-spacing: 0; font-size: 14px; color: v
 .wd span { display: block; text-align: center; padding: 9px 0; border-radius: 8px; background: var(--well); color: var(--welltext); font-size: 12px; cursor: pointer; }
 .wd input:checked + span { background: var(--solid); color: var(--solidtext); }
 textarea.summary { width: 100%; min-height: 260px; background: var(--well); color: var(--ink); border: 0; border-radius: 10px; padding: 12px; font: 12px/1.5 var(--mono); margin: 8px 0; resize: vertical; }
+
+/* dose calculator */
+.calc { display: grid; gap: 6px; }
+.calc label { margin-top: 6px; }
+.calc h3 { margin: 0; }
+.unitrow { display: grid; grid-template-columns: 1fr 96px; gap: 8px; }
+.unitrow .btn { margin: 0; }
+.drawbox { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.drawnum { font: 400 44px/1.1 var(--display); color: var(--accent); }
+.drawnum small { font: 500 14px var(--mono); color: var(--label); }
+.syringe { width: 100%; height: auto; display: block; margin: 12px 0 4px; }
+#calcout .stats { margin-top: 0; }
+.toast:not(.show) { visibility: hidden; transition: transform .3s, visibility 0s .3s; }
