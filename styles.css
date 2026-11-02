@@ -431,3 +431,5 @@ html.v2 .wuclock b { font-weight: 800; font-stretch: 80%; }
 .wu .link.muted { display: block; margin: 6px auto 0; }
 .eqchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
 .eqchips span { font-size: 11px; padding: 4px 9px; border-radius: 999px; background: var(--well); color: var(--label); border: 1px solid var(--line); }
+.set.e { grid-template-columns: 24px 1fr 1fr 60px 44px; gap: 6px; }
+.set.e input { padding: 12px 2px; }

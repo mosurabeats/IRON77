@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '34'; // keep in step with VERSION in sw.js
+const APP_VERSION = '35'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -218,7 +218,7 @@ function startSession(progId, dayIdx, slot = null) {
       const ph = phaseFor(prog), n = ph ? adjSets(ex.sets, ph.setsMod) : ex.sets;
       return {
         name: res.name, from: res.from || '', target: `${n} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
-        sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', done: false })),
+        sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', eff: workEffort(prog), done: false })),
         warm: lastWarmups(res.name),
       };
     }),
@@ -235,12 +235,19 @@ function lastWarmups(name) {
   return [];
 }
 const warmDefault = () => +S.settings.warmEff || 60;
+// Default effort for working sets: HIT goes to failure; cycle groove/deload weeks are lighter.
+function workEffort(prog) {
+  const ph = phaseFor(prog);
+  if (ph && ph.wk === 1) return 85;
+  if (ph && ph.wk === 6) return 70;
+  return prog.style === 'HIT' ? 100 : 90;
+}
 
 function finishSession() {
   wuStop();
   const c = S.current;
   c.exercises.forEach((e) => {
-    e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r }) => ({ w, r }));
+    e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r, eff }) => ({ w, r, ...(eff ? { eff: +eff } : {}) }));
     e.warm = (e.warm || []).filter((s) => s.done || +s.r > 0 || +s.w > 0).map(({ w, r, eff }) => ({ w, r, eff }));
   });
   c.exercises = c.exercises.filter((e) => e.sets.length || e.warm.length);
@@ -640,7 +647,7 @@ V.train = () => {
     const pr = sessionProgress(s);
     return `<details class="card log"><summary><div><b>${esc(s.dayName)}</b> <span class="muted">· ${esc(fmtDate(s.date))}</span></div>
       ${pr.total ? `<span class="badge ${pr.up / pr.total >= 0.5 ? 'ok' : 'wait'}">${pr.up}/${pr.total} ↑</span>` : ''}</summary>
-      ${s.exercises.map((e) => `<div class="row between small"><span>${esc(e.name)}</span><span>${(e.warm && e.warm.length ? `<em class="wu">W: ${e.warm.map((x) => `${esc(x.w)}×${esc(x.r)}@${esc(x.eff)}%`).join(', ')}</em> ` : '') + e.sets.map((x) => `${esc(x.w)}×${esc(x.r)}`).join(', ')}</span></div>`).join('')}
+      ${s.exercises.map((e) => `<div class="row between small"><span>${esc(e.name)}</span><span>${(e.warm && e.warm.length ? `<em class="wu">W: ${e.warm.map((x) => `${esc(x.w)}×${esc(x.r)}@${esc(x.eff)}%`).join(', ')}</em> ` : '') + e.sets.map((x) => `${esc(x.w)}×${esc(x.r)}${x.eff ? `@${esc(x.eff)}%` : ''}`).join(', ')}</span></div>`).join('')}
       <button class="link danger" data-act="delsession" data-id="${s.id}">Delete session</button></details>`;
   }).join('') : '<p class="muted pad">No sessions yet. Your logbook starts with the first rep.</p>'}`;
 };
@@ -701,11 +708,12 @@ V.session = () => {
       </div>` : ''}
       <div class="row warmlinks"><button class="link" data-act="addwarm" data-e="${ei}">+ Warm-up set</button>${(ex.warm || []).length ? `<button class="link muted" data-act="delwarm" data-e="${ei}">Remove last warm-up</button>` : ''}</div>
       <div class="sets">
-        <div class="set head"><span>#</span><span>${unit}</span><span>reps</span><span></span></div>
-        ${ex.sets.map((s, si) => `<div class="set${s.done ? ' done' : ''}">
+        <div class="set head e"><span>#</span><span>${unit}</span><span>reps</span><span>effort</span><span></span></div>
+        ${ex.sets.map((s, si) => `<div class="set e${s.done ? ' done' : ''}">
           <span>${si + 1}</span>
           <input inputmode="decimal" data-act="setval" data-e="${ei}" data-s="${si}" data-k="w" value="${esc(s.w)}" aria-label="Weight">
           <input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="r" value="${esc(s.r)}" aria-label="Reps">
+          <label class="eff"><input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="eff" value="${esc(s.eff ?? '')}" placeholder="${workEffort(prog)}" aria-label="Effort percent"><i>%</i></label>
           <button class="tick" data-act="donesset" data-e="${ei}" data-s="${si}" aria-label="Mark set done">${IC.check}</button>
         </div>`).join('')}
       </div>
@@ -885,7 +893,7 @@ function addExercise(name) {
   const [n, reps] = STYLE_ADD[prog.style] || [3, '8-12'];
   const last = lastPerformance(name);
   S.current.exercises.push({ name, from: '', target: `${n} × ${reps}`, reps, ss: false, note: '', added: true,
-    sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', done: false })) });
+    sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', eff: workEffort(prog), done: false })) });
   save(); closeSheet(); render(); toast(`Added ${name}.`);
   setTimeout(() => document.querySelectorAll('.card.ex')[S.current.exercises.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
 }
@@ -1581,7 +1589,7 @@ document.addEventListener('click', (ev) => {
     case 'warmdone': { const st = S.current.exercises[+d.e].warm[+d.s]; st.done = !st.done; save(); render(); break; }
     case 'addset': {
       const ex = S.current.exercises[+d.e]; const lastSet = ex.sets[ex.sets.length - 1];
-      ex.sets.push({ w: lastSet ? lastSet.w : '', r: '', done: false }); save(); render(); break;
+      ex.sets.push({ w: lastSet ? lastSet.w : '', r: '', eff: lastSet ? lastSet.eff : workEffort(progById(S.current.programId)), done: false }); save(); render(); break;
     }
     case 'donesset': {
       const s = S.current.exercises[+d.e].sets[+d.s]; s.done = !s.done; save(); render();
@@ -1627,7 +1635,9 @@ document.addEventListener('change', (ev) => {
     // Fill the sets below with the same value: only ones not yet ticked off that are empty
     // or still match what this set held before (so values you typed differently are kept).
     const sets = S.current.exercises[+d.e].sets, si = +d.s, k = d.k;
-    const prev = sets[si][k], val = el.value.trim();
+    const prev = sets[si][k];
+    let val = el.value.trim();
+    if (k === 'eff' && val !== '') { val = String(Math.max(1, Math.min(100, Math.round(+val) || 100))); el.value = val; }
     sets[si][k] = val;
     for (let j = si + 1; j < sets.length; j++) {
       const st = sets[j];
