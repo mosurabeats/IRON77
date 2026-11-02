@@ -251,7 +251,7 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .askq { font: 600 17px/1.45 var(--mono); margin: 4px 40px 8px 0; }
 
 /* exercise demo animation */
-.demo { position: relative; border-radius: 12px; overflow: hidden; background: #fff; aspect-ratio: 1; max-height: 320px; margin: 8px auto 4px; }
+.demo { position: relative; border-radius: 12px; overflow: hidden; background: #fff; aspect-ratio: 1; width: 200px; max-width: 100%; margin: 8px auto 4px; }
 .demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .demo.dark { background: var(--well); }
 .demo.dark img { filter: invert(1) hue-rotate(180deg); mix-blend-mode: screen; }

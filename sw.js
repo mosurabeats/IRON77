@@ -1,7 +1,7 @@
 // Offline support. Network-first for the app's own files, always revalidating with the
 // server (bypassing the browser's HTTP cache) so updates arrive as soon as they're online.
 // Falls back to the saved copy when offline. Bump VERSION on every release.
-const VERSION = '20';
+const VERSION = '21';
 const CACHE = 'iron77-v' + VERSION;
 const DEMO_CACHE = 'iron77-demo-gifs'; // exercise demo animations, kept across releases
 const DEMO_HOST = 'static.exercisedb.dev';
