@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '35'; // keep in step with VERSION in sw.js
+const APP_VERSION = '36'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -710,14 +710,14 @@ V.session = () => {
       <div class="sets">
         <div class="set head e"><span>#</span><span>${unit}</span><span>reps</span><span>effort</span><span></span></div>
         ${ex.sets.map((s, si) => `<div class="set e${s.done ? ' done' : ''}">
-          <span>${si + 1}</span>
+          <button class="setno" data-act="delset" data-e="${ei}" data-s="${si}" aria-label="Remove set ${si + 1}">${si + 1}</button>
           <input inputmode="decimal" data-act="setval" data-e="${ei}" data-s="${si}" data-k="w" value="${esc(s.w)}" aria-label="Weight">
           <input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="r" value="${esc(s.r)}" aria-label="Reps">
           <label class="eff"><input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="eff" value="${esc(s.eff ?? '')}" placeholder="${workEffort(prog)}" aria-label="Effort percent"><i>%</i></label>
           <button class="tick" data-act="donesset" data-e="${ei}" data-s="${si}" aria-label="Mark set done">${IC.check}</button>
         </div>`).join('')}
       </div>
-      <button class="link" data-act="addset" data-e="${ei}">+ Add set</button>
+      <div class="row warmlinks"><button class="link" data-act="addset" data-e="${ei}">+ Add set</button>${ex.sets.length > 1 ? `<button class="link muted" data-act="poplast" data-e="${ei}">Remove last set</button>` : ''}</div>
     </section>`;
   }).join('')}
   <button class="btn ghost" data-act="addex">+ Add Exercise</button>
@@ -1587,6 +1587,14 @@ document.addEventListener('click', (ev) => {
     }
     case 'delwarm': S.current.exercises[+d.e].warm.pop(); save(); render(); break;
     case 'warmdone': { const st = S.current.exercises[+d.e].warm[+d.s]; st.done = !st.done; save(); render(); break; }
+    case 'delset': {
+      const ex = S.current.exercises[+d.e];
+      if (ex.sets.length <= 1) { toast('An exercise needs at least one set. Use the exercise\u2019s \u24d8 panel to remove the exercise.'); break; }
+      const st = ex.sets[+d.s];
+      ask(`Remove set ${+d.s + 1} of ${ex.name}${st.r ? ` (${st.w || 0} \u00d7 ${st.r})` : ''}?`, 'Remove set', () => { ex.sets.splice(+d.s, 1); save(); render(); });
+      break;
+    }
+    case 'poplast': { const ex = S.current.exercises[+d.e]; if (ex.sets.length > 1) { ex.sets.pop(); save(); render(); } break; }
     case 'addset': {
       const ex = S.current.exercises[+d.e]; const lastSet = ex.sets[ex.sets.length - 1];
       ex.sets.push({ w: lastSet ? lastSet.w : '', r: '', eff: lastSet ? lastSet.eff : workEffort(progById(S.current.programId)), done: false }); save(); render(); break;
