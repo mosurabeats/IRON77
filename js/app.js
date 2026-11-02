@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '31'; // keep in step with VERSION in sw.js
+const APP_VERSION = '32'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -74,7 +74,6 @@ const exLabel = (x, extra = '', progId) => {
     + (r.missing ? `<em class="warn">Needs ${esc(missingFor(r.name).map(equipName).join(', '))}</em>` : '')
     + extra + '</span>';
 };
-const ytURL = (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 
 let view = 'today';
 let viewArg = null;
@@ -466,7 +465,6 @@ const IC = {
   timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>'),
   check: svg('<path d="M20 6L9 17l-5-5"/>'),
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
-  play: svg('<path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/>'),
 };
 
 const V = {};
@@ -711,12 +709,6 @@ function demoSheet(name, ei) {
     ${miss.length ? `<p class="warn small">Your gym doesn't have: ${esc(miss.map(equipName).join(', '))}</p>` : ''}
     ${(() => { const h = liftHistory(name); return h.pts.length ? `<h4>Your progress</h4>${liftChart(h, true)}<button class="link" data-act="liftchart" data-n="${esc(name)}">Full history ${IC.arrow}</button>` : ''; })()}
     ${e ? `<h4>How to do it</h4><ol class="cues">${e[3].map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}
-    <h4>Watch</h4>
-    <div class="vids">
-      <a class="btn ghost" href="${ytURL((e && e[4]) || 'golden era bodybuilding ' + name)}" target="_blank" rel="noopener">${IC.play} Classic footage</a>
-      <a class="btn ghost" href="${ytURL(name + ' proper form')}" target="_blank" rel="noopener">${IC.play} Form tutorial</a>
-    </div>
-    <p class="muted small">Opens a YouTube search. Results are other people's videos, so quality varies.</p>
     ${alts.length ? `<h4>${cur ? 'Swap for' : 'Alternatives'}</h4><div class="card list inset">
       ${alts.map((a) => `<div class="exrow"><button class="exname" data-act="demo" data-n="${esc(a)}"${cur ? ` data-e="${ei}"` : ''}>${esc(a)}${a === (cur && cur.from) ? ' <em>(original)</em>' : ''}</button>
         ${!canDo(a) ? `<span class="badge">Needs ${esc(missingFor(a).map(equipName).join(', '))}</span>` : cur ? `<button class="link" data-act="swapex" data-e="${ei}" data-to="${esc(a)}">Swap in</button>` : ''}</div>`).join('')}</div>
