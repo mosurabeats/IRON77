@@ -415,3 +415,19 @@ html.v2 .exrow em { font-family: var(--sans); }
 .warmlinks { justify-content: space-between; margin-top: 2px; }
 .link.muted { color: var(--label); font-weight: 500; }
 .log .wu { font-style: normal; color: var(--label); opacity: .8; }
+
+/* guided warm-up + equipment */
+.wulist { list-style: none; padding: 0; margin: 10px 0 4px; }
+.wulist li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 10px; font-size: 14px; }
+.wulist li b { font-weight: 500; color: var(--label); white-space: nowrap; }
+.wulist li.now { background: rgba(57,180,242,.16); box-shadow: inset 3px 0 0 var(--accent); }
+.wulist li.now b { color: var(--accent); }
+.wulist li.past span { color: var(--label); text-decoration: line-through; }
+.wuclock { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; padding: 12px 14px; border-radius: 14px; background: var(--well); }
+.wuclock span { font-weight: 600; }
+.wuclock b { font: 400 30px var(--display); color: var(--accent); }
+html.v2 .wuclock b { font-weight: 800; font-stretch: 80%; }
+.wubtns { gap: 8px; } .wubtns .btn { margin-top: 8px; }
+.wu .link.muted { display: block; margin: 6px auto 0; }
+.eqchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.eqchips span { font-size: 11px; padding: 4px 9px; border-radius: 999px; background: var(--well); color: var(--label); border: 1px solid var(--line); }

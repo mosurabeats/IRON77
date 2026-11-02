@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '33'; // keep in step with VERSION in sw.js
+const APP_VERSION = '34'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -207,6 +207,7 @@ function liftSheet(name) {
 }
 
 function startSession(progId, dayIdx, slot = null) {
+  wuStop();
   const prog = progById(progId);
   const day = prog.days[dayIdx];
   S.current = {
@@ -236,6 +237,7 @@ function lastWarmups(name) {
 const warmDefault = () => +S.settings.warmEff || 60;
 
 function finishSession() {
+  wuStop();
   const c = S.current;
   c.exercises.forEach((e) => {
     e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r }) => ({ w, r }));
@@ -321,8 +323,6 @@ function suggestPrograms(goal) {
   const recent = hist.slice(-2).map((h) => h.programId);
   return PROGRAMS.map((p) => {
     const f = PROGRAM_FIT[p.id]; let sc = (f[goal] || 0) * 10;
-    if (total < 24 && f.level >= 3) sc -= 12;
-    if (total < 24 && f.level === 1) sc += 3;
     if (recent.length === 2 && recent.every((r) => r === p.id)) sc -= 8;
     else if (recent[recent.length - 1] === p.id) sc -= 2;
     return { p, sc, why: f.why[goal] || p.summary };
@@ -354,7 +354,8 @@ function cycleStartSheet(goal = S.goal || 'size') {
       <div class="row between"><span class="kicker">${i === 0 ? 'Best fit' : 'Also good'} · ${esc(x.p.legend)}</span><span class="badge">${CYCLE_PER_WEEK[x.p.id] * CYCLE_WEEKS} sessions</span></div>
       <h3>${esc(x.p.name)}</h3><p class="muted small">${esc(x.why)}</p>
       <button class="btn${i === 0 ? '' : ' ghost'}" data-act="cyclego" data-p="${x.p.id}" data-g="${goal}">Start with ${esc(x.p.name)}</button></div>`).join('')}
-    <details class="more"><summary>Other programs</summary>${sug.slice(3).map((x) => `<button class="link" data-act="cyclego" data-p="${x.p.id}" data-g="${goal}">${esc(x.p.name)} ${IC.arrow}</button>`).join('<br>')}</details>`;
+    <h4>All programs</h4>
+    <div class="card list inset">${sug.slice(3).map((x) => `<button class="exrow" data-act="cyclego" data-p="${x.p.id}" data-g="${goal}"><span>${esc(x.p.name)}<em> · ${esc(x.p.legend)} · ${CYCLE_PER_WEEK[x.p.id]}/week</em></span><span class="badge addb">Start</span></button>`).join('')}</div>`;
 }
 function cycleReviewSheet() {
   const cy = S.cycle, prog = progById(cy.programId);
@@ -449,6 +450,61 @@ function goalFor(ex, prog) {
   }
   return `Beat ${fmtNum(w)} \u00d7 ${r}: aim for ${fmtNum(w)} \u00d7 ${r + 1} or more.`;
 }
+/* ---------- guided warm-up (Ladder-style timed block) ---------- */
+function warmupMoves(c) {
+  // Groups ordered by how many of the day's exercises hit them; the main group gets the most moves.
+  const count = {};
+  c.exercises.forEach((e) => { const g = lib(e.name)?.[0]; if (g) count[g] = (count[g] || 0) + 1; });
+  const groups = Object.keys(count).sort((x, y) => count[y] - count[x]);
+  const out = [WARMUP_MOVES.general[0]];
+  for (const [gi, g] of groups.entries()) {
+    const cap = groups.length === 1 ? 5 : gi === 0 ? 4 : g === 'Abs' ? 1 : 2;
+    let n = 0;
+    for (const m of WARMUP_MOVES[g] || []) { if (n >= cap || out.length >= 7) break; if (!out.some((x) => x[0] === m[0])) { out.push(m); n++; } }
+  }
+  if (out.length < 4) out.push(WARMUP_MOVES.general[1]);
+  return out;
+}
+const secText = (t) => (t >= 60 ? `${Math.floor(t / 60)} min${t % 60 ? ` ${t % 60} sec` : ''}` : `${t} sec`);
+const wu = { active: false, idx: 0, end: 0, iv: null };
+function wuStop() { wu.active = false; clearInterval(wu.iv); wu.iv = null; }
+function wuPaint() {
+  const card = document.getElementById('wucard'); if (!card || !S.current) return;
+  const moves = warmupMoves(S.current), left = Math.max(0, Math.ceil((wu.end - Date.now()) / 1000));
+  card.querySelectorAll('.wulist li').forEach((li, i) => { li.classList.toggle('now', i === wu.idx); li.classList.toggle('past', i < wu.idx); });
+  const nm = card.querySelector('#wuname'), tm = card.querySelector('#wutime');
+  if (nm) nm.textContent = moves[wu.idx][0];
+  if (tm) tm.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+}
+function wuNext() {
+  const moves = warmupMoves(S.current);
+  wu.idx++;
+  if (wu.idx >= moves.length) { wuStop(); S.current.warmupDone = true; save(); render(); toast('Warm-up done. Now ramp up on your first lift.'); return; }
+  navigator.vibrate?.(150);
+  wu.end = Date.now() + moves[wu.idx][1] * 1000; wuPaint();
+}
+function wuStart() {
+  wuStop(); wu.active = true; wu.idx = 0;
+  wu.end = Date.now() + warmupMoves(S.current)[0][1] * 1000;
+  render();
+  wu.iv = setInterval(() => { if (!S.current || !wu.active) return wuStop(); if (Date.now() >= wu.end) wuNext(); else wuPaint(); }, 250);
+  wuPaint();
+}
+function warmupCard(c) {
+  const moves = warmupMoves(c), total = moves.reduce((a, m) => a + m[1], 0);
+  if (c.warmupDone) return `<section class="card wu"><div class="row between"><div><div class="kicker">Warm-up</div><h3>Done</h3></div><span class="badge ok">\u2713</span></div></section>`;
+  return `<section class="card wu" id="wucard">
+    <div class="kicker">Warm-up \u00b7 ${esc(secText(total))}</div>
+    <h3>Get loose before the first set</h3>
+    <ol class="wulist">${moves.map((m, i) => `<li class="${wu.active && i === wu.idx ? 'now' : ''}${wu.active && i < wu.idx ? ' past' : ''}"><span>${esc(m[0])}</span><b>${esc(secText(m[1]))}</b></li>`).join('')}</ol>
+    ${wu.active
+      ? `<div class="wuclock"><span id="wuname">${esc(moves[wu.idx][0])}</span><b id="wutime">0:00</b></div>
+         <div class="row wubtns"><button class="btn ghost" data-act="wuskip">Next move</button><button class="btn ghost" data-act="wustop">Stop</button></div>`
+      : `<button class="btn" data-act="wustart">Start warm-up</button><button class="link muted" data-act="wudone">Skip warm-up</button>`}
+    <p class="muted small">Then use warm-up sets to ramp up on your first lift.</p>
+  </section>`;
+}
+
 function goalsCard(c, prog) {
   const names = c.exercises.map((e) => e.name);
   const sets = c.exercises.reduce((a, e) => a + e.sets.length, 0);
@@ -460,6 +516,7 @@ function goalsCard(c, prog) {
   return `<details class="card goals" open>
     <summary><div><div class="kicker">Today's goals</div><h3>${esc(focusText(names))}</h3></div><span class="chev">+</span></summary>
     <p class="muted small">${names.length} exercises \u00b7 ${sets} working set${sets === 1 ? '' : 's'} \u00b7 ~${estMinutes(prog, sets)} min \u00b7 rest ${restText(prog)}</p>
+    ${(() => { const eq = [...new Set(names.flatMap((n) => lib(n)?.[1] || []))].map(equipName); return `<div class="eqchips">${(eq.length ? eq : ['Bodyweight']).map((x) => `<span>${esc(x)}</span>`).join('')}</div>`; })()}
     ${notes.length ? `<p class="hint small">${esc(notes.join(' '))}</p>` : ''}
     ${(() => { const ph = phaseFor(prog); return ph && c.programId === S.cycle.programId ? `<h4>This week \u00b7 Week ${ph.wk} of 6 \u00b7 ${esc(ph.phase)}</h4><p>${esc(ph.text)}</p>` : ''; })()}
     ${(() => { const dn = DAY_NOTES[c.programId + '|' + c.dayName]; return dn
@@ -618,6 +675,7 @@ V.session = () => {
     <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
     <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
   ${goalsCard(c, prog)}
+  ${warmupCard(c)}
   ${c.exercises.map((ex, ei) => {
     const last = lastPerformance(ex.name);
     const top = upperReps(ex.reps);
@@ -1509,6 +1567,10 @@ document.addEventListener('click', (ev) => {
         break;
       }
       S.activeProgram = d.id; save(); toast('Program activated.'); render(); break;
+    case 'wustart': wuStart(); break;
+    case 'wuskip': wuNext(); break;
+    case 'wustop': wuStop(); render(); break;
+    case 'wudone': wuStop(); S.current.warmupDone = true; save(); render(); break;
     case 'addwarm': {
       const ex = S.current.exercises[+d.e]; ex.warm ||= [];
       const prev = ex.warm[ex.warm.length - 1];
@@ -1529,7 +1591,7 @@ document.addEventListener('click', (ev) => {
     case 'timer': timer ? stopTimer() : startTimer(+d.s); break;
     case 'stoptimer': stopTimer(); break;
     case 'finish': finishSession(); break;
-    case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
+    case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { wuStop(); S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
     case 'delsession': ask('Delete this session from your logbook?', 'Delete session', () => { S.sessions = S.sessions.filter((s) => s.id !== d.id); save(); render(); }); break;
     case 'setlook': S.settings.look = d.k; save(); document.documentElement.classList.toggle('v2', d.k !== 'v1'); render(); toast(d.k === 'v1' ? 'Version 1 look restored.' : 'Version 2 look on.'); break;
     case 'setunit': S.settings.unit = d.u; save(); render(); break;

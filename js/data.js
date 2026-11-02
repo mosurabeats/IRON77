@@ -149,7 +149,7 @@ const PROGRAMS = [
   },
   {
     id: 'arnold-split',
-    name: 'Golden Era Double Split',
+    name: 'Arnold\u2019s 6-Day Split',
     legend: 'Arnold & the Gold’s Gym crew',
     style: 'Volume',
     level: 'Advanced',
@@ -686,4 +686,16 @@ const ROTATE = {
   'Barbell Curl': ['DB Curl'], 'Incline DB Curl': ['Concentration Curl'], 'Preacher Curl': ['Concentration Curl'],
   'Triceps Pressdown': ['Lying Triceps Extension', 'Overhead DB Extension'], 'Lying Triceps Extension': ['Overhead DB Extension'],
   'Hanging Leg Raise': ['Lying Leg Raise'], 'Bent-Knee Sit-Up': ['Lying Leg Raise'], 'Wrist Curl': ['DB Wrist Curl'],
+};
+
+/* ---------- Guided warm-up (Ladder-style timed block at the start of a workout) ----------
+   [name, seconds]; picked by the muscle groups a workout trains. */
+const WARMUP_MOVES = {
+  general: [['Light cardio (bike, rower or brisk walk)', 120], ['Jumping jacks', 30]],
+  Chest: [['Arm circles, forward', 20], ['Arm circles, backward', 20], ['Doorway chest stretch', 30], ['Scap push-ups', 30]],
+  Back: [['Lat stretch, hands on wall \u2022 left', 20], ['Lat stretch, hands on wall \u2022 right', 20], ['Cat\u2013cow', 30], ['Dead hang', 20]],
+  Shoulders: [['Arm circles, forward', 20], ['Arm circles, backward', 20], ['Band pull-aparts (or reverse flyes, no weight)', 30], ['Wall slides', 30]],
+  Arms: [['Wrist circles', 20], ['Light band or bodyweight curls', 30], ['Triceps stretch \u2022 each arm', 30]],
+  Legs: [['Leg swings, front to back \u2022 left', 20], ['Leg swings, front to back \u2022 right', 20], ['Hip circles', 20], ['Bodyweight squats', 30], ['Ankle rocks', 20]],
+  Abs: [['Cat\u2013cow', 30], ['Dead bug', 30]],
 };
