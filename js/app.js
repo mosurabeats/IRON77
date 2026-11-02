@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '21'; // keep in step with VERSION in sw.js
+const APP_VERSION = '22'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -366,6 +366,7 @@ V.session = () => {
   return `
   <header class="top"><div><div class="kicker">${esc(prog.name)}</div><h1 class="sm">${esc(c.dayName)}</h1></div>
     <div class="row"><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
+    <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
     <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
   ${c.exercises.map((ex, ei) => {
     const last = lastPerformance(ex.name);
@@ -487,8 +488,66 @@ function demoSheet(name, ei) {
     ${cur && cur.name === name ? `<button class="btn ghost danger" data-act="removeex" data-e="${ei}">Remove from this workout</button>` : ''}`;
 }
 
+/* What each exercise mainly targets, for suggestions. */
+const EX_TARGET = {
+  'Squat': 'Quads', 'Front Squat': 'Quads', 'Leg Press': 'Quads', 'Hack Squat': 'Quads', 'Goblet Squat': 'Quads', 'Bulgarian Split Squat': 'Quads', 'Sissy Squat': 'Quads', 'Leg Extension': 'Quads',
+  'Leg Curl': 'Hamstrings', 'DB Leg Curl': 'Hamstrings', 'Stiff-Leg Deadlift': 'Hamstrings', 'DB Romanian Deadlift': 'Hamstrings',
+  'Standing Calf Raise': 'Calves', 'Single-Leg DB Calf Raise': 'Calves',
+  'Deadlift': 'Lower back', 'Barbell Row': 'Upper back', 'One-Arm DB Row': 'Upper back',
+  'Chin-Up': 'Lats', 'Wide-Grip Chin-Up': 'Lats', 'Wide-Grip Pulldown': 'Lats', 'Close-Grip Palms-Up Pulldown': 'Lats', 'Nautilus Pullover': 'Lats', 'DB Pullover': 'Lats', 'Straight-Arm Pulldown': 'Lats',
+  'Bench Press': 'Chest', 'Wide-Grip Bench Press': 'Chest', 'DB Bench Press': 'Chest', 'Push-Up': 'Chest', 'Dips': 'Chest', 'Neck Press': 'Upper chest', 'Incline Press': 'Upper chest', 'Incline DB Press': 'Upper chest',
+  'Pec Deck': 'Chest (fly)', 'DB Flyes': 'Chest (fly)', 'Cable Crossover': 'Chest (fly)',
+  'Overhead Press': 'Front delts', 'Behind-the-Neck Press': 'Front delts', 'Seated DB Press': 'Front delts',
+  'DB Lateral Raise': 'Side delts', 'Cable Lateral Raise': 'Side delts', 'Bent-Over Lateral Raise': 'Rear delts', 'Reverse Pec Deck': 'Rear delts',
+  'Barbell Curl': 'Biceps', 'DB Curl': 'Biceps', 'Incline DB Curl': 'Biceps', 'Preacher Curl': 'Biceps', 'Concentration Curl': 'Biceps',
+  'Triceps Pressdown': 'Triceps', 'Lying Triceps Extension': 'Triceps', 'Close-Grip Bench Press': 'Triceps', 'Overhead DB Extension': 'Triceps', 'Bench Dips': 'Triceps',
+  'Wrist Curl': 'Forearms', 'DB Wrist Curl': 'Forearms', 'Bent-Knee Sit-Up': 'Abs', 'Hanging Leg Raise': 'Abs', 'Lying Leg Raise': 'Abs',
+};
+const STYLE_ADD = { HIT: [1, '6-10'], Strength: [3, '5'], Classic: [3, '10'], Volume: [4, '8-12'], Density: [8, '8'] };
+const STYLE_TIP = {
+  HIT: 'Heavy Duty: one more all-out set at most. Brief beats long.',
+  Strength: 'Strength day: keep extras light so the big lifts stay heavy.',
+  Classic: 'Add one movement for a lagging area and keep the rest simple.',
+  Volume: 'Volume day: add a couple of exercises to bring up weak points.',
+  Density: '8×8 style: short rests apply to anything you add.',
+};
+const PROGRAM_STAPLES = new Set(PROGRAMS.flatMap((p) => p.days.flatMap((d) => d.exercises.map((x) => x.name))));
+
+// Rank exercises that complement today's workout: same muscle groups, missing targets first.
+function suggestExercises(limit = 5) {
+  const cur = S.current; if (!cur) return [];
+  const names = new Set(cur.exercises.map((e) => e.name));
+  const groups = new Set(cur.exercises.map((e) => lib(e.name)?.[0]).filter(Boolean));
+  const covered = new Set(cur.exercises.map((e) => EX_TARGET[e.name]).filter(Boolean));
+  const alts = new Set(cur.exercises.flatMap((e) => [...(lib(e.name)?.[2] || []), e.from].filter(Boolean)));
+  const scored = [];
+  for (const [n, e] of Object.entries(EXERCISES)) {
+    if (names.has(n) || !canDo(n)) continue;
+    const t = EX_TARGET[n], g = e[0];
+    let sc = 0, why = '';
+    if (groups.has(g)) { sc += 4; why = covered.has(t) ? `More ${t.toLowerCase()} work` : `Adds ${t.toLowerCase()} to today's ${g.toLowerCase()} work`; if (!covered.has(t)) sc += 3; }
+    else if (g === 'Abs' && !covered.has('Abs')) { sc += 3; why = 'Ab finisher'; }
+    else continue;
+    if (PROGRAM_STAPLES.has(n)) sc += 1;
+    if (alts.has(n)) sc -= 2;
+    scored.push({ n, t, sc, why });
+  }
+  scored.sort((a, b) => b.sc - a.sc || a.n.localeCompare(b.n));
+  const out = [], seen = new Set();
+  for (const x of scored) { if (seen.has(x.t)) continue; seen.add(x.t); out.push(x); if (out.length >= limit) break; }
+  return out;
+}
+
 function addSheet() {
+  const prog = S.current && progById(S.current.programId);
+  const [n, reps] = STYLE_ADD[prog?.style] || [3, '8-12'];
+  const sug = suggestExercises();
   return `<h2>Add exercise</h2>
+    ${sug.length ? `<h4>Suggested for today</h4>
+      <p class="muted small" style="margin-top:0">${esc(STYLE_TIP[prog.style] || '')} Added as ${n} × ${esc(reps)}.</p>
+      <div class="card list inset">${sug.map((x) => `<button class="exrow" data-act="addpick" data-n="${esc(x.n)}">
+        <span>${esc(x.n)}<em> · ${esc(x.why)}</em></span><span class="badge addb">+ Add</span></button>`).join('')}</div>
+      <h4>All exercises</h4>` : ''}
     <input class="search" type="search" placeholder="Search exercises" data-act="exsearch" aria-label="Search exercises">
     <div class="searchable">${exRows('addpick')}</div>
     <h4>Not listed?</h4>
@@ -509,7 +568,7 @@ function swapExercise(ei, to) {
 
 function addExercise(name) {
   const prog = progById(S.current.programId);
-  const n = prog.style === 'HIT' ? 1 : 3, reps = prog.style === 'HIT' ? '6-10' : '8-12';
+  const [n, reps] = STYLE_ADD[prog.style] || [3, '8-12'];
   const last = lastPerformance(name);
   S.current.exercises.push({ name, from: '', target: `${n} × ${reps}`, reps, ss: false, note: '', added: true,
     sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', done: false })) });

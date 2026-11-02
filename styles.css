@@ -272,3 +272,4 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .card.lift .liftchart { margin-bottom: 0; }
 .stats b.up { color: var(--accent); }
 .stats b.down { color: #ff9a9e; }
+.exrow .badge.addb { white-space: nowrap; flex: none; background: var(--solid); color: var(--solidtext); }
