@@ -527,3 +527,83 @@ const EX_DEMO = {
   "Hanging Leg Raise": "I3tsCnC",
   "Lying Leg Raise": "WhuFnR7",
 };
+
+/* ---------- Workout-day notes: short brief + logistics + philosophy ----------
+   Keyed by "programId|day name". */
+const DAY_NOTES = {
+  'heavy-duty|Chest & Back': {
+    brief: 'Pre-exhaust day: flyes straight into incline presses, pullovers straight into pulldowns, then one heavy deadlift. Five all-out sets, and every one has to count.',
+    logistics: 'Plan on 15–20 minutes. Warm up with one or two light sets of the first movement in each pair. Set the incline bench next to the pec deck (or flye bench) and the pulldown next to the pullover, so you can switch with no rest. Do the deadlift last, after a proper warm-up ramp, and rest 2–3 minutes before it. Log every set: next time you need one more rep or a little more weight.',
+    philosophy: 'Pre-exhaustion gets around the weak link. In a press or a pulldown your arms give out before your chest or lats are fully worked. Isolating the big muscle first and going straight into the compound lift lets your fresh arms drive the already-tired target past where it could go on its own. Mentzer’s point was that the stimulus is the intensity of the set, not the number of sets: one true failure set signals growth, and anything more only digs a deeper recovery hole.',
+  },
+  'heavy-duty|Legs': {
+    brief: 'Leg extensions straight into leg presses, then calves. Short and brutal, done in 10–15 minutes.',
+    logistics: 'Warm up with a light set of extensions and leg presses. Load the leg press before you start the extensions, because the switch has to be immediate. Calves come last, with a full stretch at the bottom and a pause at the top. Expect the superset to wipe you out: rest as long as you need before calves.',
+    philosophy: 'The extensions exhaust the quads in isolation; the leg press then lets your hips and glutes push the quads beyond failure. Legs are your biggest muscles and draw hardest on recovery, which is why Mentzer gave them a day of their own and kept it brief.',
+  },
+  'heavy-duty|Shoulders & Arms': {
+    brief: 'Side and rear delts, then curls, then pressdowns straight into dips. Isolation work, all to failure.',
+    logistics: 'About 15 minutes. Use moderate weight and strict form on the laterals, since shoulders cheat easily. Put the dip station next to the pressdown so the switch is instant. Rest 1–2 minutes between unpaired movements.',
+    philosophy: 'Your arms and shoulders already got indirect work on chest and back day, so they only need a little direct stimulus here. Small muscles recover quickly but your overall system doesn’t, so keep it short and let the logbook tell you whether you’re growing.',
+  },
+  'consolidation|A': {
+    brief: 'Squats and dips, one all-out set each. The bare essentials of Mentzer’s later method.',
+    logistics: 'Ten minutes of work after a thorough warm-up. Ramp up on squats with 3–4 progressively heavier warm-up sets, then take one set to failure in the 8–12 range. Rest fully, then one set of dips. Use a safety rack or a spotter for the squat.',
+    philosophy: 'Late in his career Mentzer concluded that most people overtrain even on brief programs. Consolidation trains the whole body with a couple of big movements and long rests between workouts. If you aren’t stronger every session, you add rest, not work.',
+  },
+  'consolidation|B': {
+    brief: 'Deadlifts and close-grip pulldowns: two movements, maximum effort, then a long rest.',
+    logistics: 'Warm up the deadlift carefully with several ramping sets. The working set is 5–8 reps with perfect form; end the set when your form starts to break, not after it has. Rest a few minutes, then one set of pulldowns to failure.',
+    philosophy: 'The deadlift taxes nearly every muscle in your body, and your recovery along with it, which is why it stands almost alone here. Fewer workouts, each one heavier than the last: that is the whole idea.',
+  },
+  'colorado|Full Body': {
+    brief: 'Nine stations, one set each, moving quickly from one to the next so your heart rate stays high.',
+    logistics: 'About 25–30 minutes. Set up all the stations in order before you start so there’s almost no rest between them. Do 8–12 reps per exercise with slow negatives. If you need a breather between the leg work and the upper body, take it, but keep it short.',
+    philosophy: 'Arthur Jones believed intensity, not volume, drives growth, and that the whole body should be worked in sequence, to failure, in one session. Casey Viator’s Colorado Experiment results (debated as they are) made the case that brief, hard full-body training could build size fast.',
+  },
+  'golden-six|Full Body': {
+    brief: 'The six classic basics, 3–4 sets each. A full-body foundation, three times a week.',
+    logistics: 'About 45–60 minutes. Rest 60–90 seconds between sets. Squat first while you’re fresh, keep the behind-the-neck press light (or switch to a front press if your shoulders object), and finish with sit-ups. Add weight once every set hits 10 clean reps.',
+    philosophy: 'Before split routines and specialisation, champions built their base on a handful of compound lifts done often. The goal is skill and strength on the basics; size follows from that.',
+  },
+  'park-5x5|Phase I': {
+    brief: 'Squat, bench and deadlift for 5×5: two build-up sets, then three heavy working sets.',
+    logistics: 'About 45 minutes. Sets 1 and 2 are warm-ups rising to your working weight; sets 3–5 are all at that weight. Rest 2–3 minutes between heavy sets, and use a rack with safety bars for squat and bench. When you get 5 reps on all three working sets, add weight next time.',
+    philosophy: 'Reg Park’s base for raw strength and mass. He believed a bodybuilder should be strong first, and that a physique is built on numbers going up on the basic lifts.',
+  },
+  'park-5x5|Phase II': {
+    brief: 'Six lifts at 5×5: more volume on the same heavy basics, once Phase I has built your base.',
+    logistics: 'About 75 minutes. Same pattern: two build-up sets, then three working sets. Front squats come first, then back squats, so take your time warming up. The press and row bring in your shoulders and upper back. Rest 2–3 minutes between heavy sets.',
+    philosophy: 'Once the big three were moving well, Park added more basic movements to round out the physique while keeping the heavy 5-rep work. It is still a strength program at heart: progress is measured in weight on the bar.',
+  },
+  'arnold-split|Chest & Back': {
+    brief: 'Big chest and back volume, pairing pushes with pulls. Chase the pump.',
+    logistics: 'About 60–75 minutes. Pair a chest movement with a back movement (bench with chins, incline with rows) and alternate between them with 60–75 seconds’ rest. Use the full range of motion, with a deep stretch on the flyes and pullovers.',
+    philosophy: 'The Venice Beach approach: high volume, frequent training and the pump. Arnold paired opposing muscles so one rested while the other worked, and treated a full pump as the sign that a muscle had been worked hard enough. It demands lots of food and sleep to recover from.',
+  },
+  'arnold-split|Shoulders & Arms': {
+    brief: 'Presses and raises, then curls and triceps work in supersets. Arm day, Venice style.',
+    logistics: 'About 60 minutes. Press heavy first, then do the laterals. Superset biceps with triceps (curls with close-grip bench, incline curls with lying extensions) and finish with wrist curls. Keep rests to about a minute.',
+    philosophy: 'Arnold’s "shocking principle": keep changing angles and techniques so the muscles never settle in. Arms were his showpiece, and he trained them with the same intensity as legs.',
+  },
+  'arnold-split|Legs': {
+    brief: 'Squats, then quad and hamstring work, then ten sets of calves. Long and hard.',
+    logistics: 'About 75 minutes. Squat first and heaviest, then extensions and curls. Calves get 10 sets with a full stretch, a full squeeze and short rests. Finish with hanging leg raises.',
+    philosophy: 'Arnold famously cut the legs off his sweatpants so he couldn’t hide his weak calves from himself. Attack your weak points first and hardest; this is the day a lot of physiques are won.',
+  },
+  'gironda-8x8|Chest, Back & Shoulders': {
+    brief: '8×8 on the neck press, wide chins and laterals, with moderate weight and only 15–30 seconds’ rest.',
+    logistics: 'About 30–40 minutes. Pick a weight around 60% of what you’d use for a normal set of 8, and use a timer: 15–30 seconds between sets, no more. Take the neck press light and with a spotter, lowering the bar slowly to the base of your neck.',
+    philosophy: 'Vince Gironda called 8×8 the "honest workout": the short rests make a moderate weight brutally hard and build muscle density. He chose exercises to sculpt shape (the neck press for the upper, outer chest) rather than simply to add size.',
+  },
+  'gironda-8x8|Arms': {
+    brief: 'Preacher curls and pressdowns, 8×8 each, with short rests and constant tension.',
+    logistics: 'About 25 minutes. Use a weight you could normally curl 12–14 times, and hold rests to 15–30 seconds. Keep strict form on the preacher bench, with no bouncing out of the bottom.',
+    philosophy: 'Gironda trained arms for shape, especially the lower biceps, using the preacher curl Larry Scott made famous. The density method floods the muscle with blood and keeps tension high without needing heavy weights.',
+  },
+  'gironda-8x8|Legs': {
+    brief: 'Hack squats, leg curls and calves, 8×8 each, with short rests.',
+    logistics: 'About 35 minutes. Hack squat with a moderate weight and your feet low on the platform. Stick to the 15–30 second rests; the last sets of each exercise will be very hard. Use a full range of motion on every calf rep.',
+    philosophy: 'Gironda wasn’t a fan of heavy back squats for everyone; he preferred hack and sissy squats to build the quads without thickening the hips. Shape and density over sheer size.',
+  },
+};

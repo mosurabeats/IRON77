@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '23'; // keep in step with VERSION in sw.js
+const APP_VERSION = '24'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -301,8 +301,10 @@ function goalsCard(c, prog) {
   return `<details class="card goals" open>
     <summary><div><div class="kicker">Today's goals</div><h3>${esc(focusText(names))}</h3></div><span class="chev">+</span></summary>
     <p class="muted small">${names.length} exercises \u00b7 ${sets} working set${sets === 1 ? '' : 's'} \u00b7 ~${estMinutes(prog, sets)} min \u00b7 rest ${restText(prog)}</p>
-    <p>${esc(STYLE_BRIEF[prog.style] || '')}</p>
     ${notes.length ? `<p class="hint small">${esc(notes.join(' '))}</p>` : ''}
+    ${(() => { const dn = DAY_NOTES[c.programId + '|' + c.dayName]; return dn
+      ? `<h4>Logistics</h4><p>${esc(dn.logistics)}</p><h4>Philosophy</h4><p>${esc(dn.philosophy)}</p>`
+      : `<h4>Approach</h4><p>${esc(STYLE_BRIEF[prog.style] || '')}</p>`; })()}
     <h4>Targets to beat</h4>
     <ul class="goallist">${c.exercises.map((e) => `<li><b>${esc(e.name)}</b><span>${esc(goalFor(e, prog))}</span></li>`).join('')}</ul>
   </details>`;
@@ -342,6 +344,7 @@ V.today = () => {
   <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
     <h2>Next: ${esc(day.name)}</h2>
+    ${DAY_NOTES[prog.id + '|' + day.name] ? `<p class="brief">${esc(DAY_NOTES[prog.id + '|' + day.name].brief)}</p>` : ''}
     <p class="sumline">${esc(daySummary(prog, day))}</p>
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
     <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
@@ -352,7 +355,7 @@ V.today = () => {
     const u = upcoming(5), rest = u.list.slice(1);
     return `<section class="card">
     <div class="row between"><h3>Coming up</h3><span class="muted small">${u.gap - 1} rest day${u.gap - 1 === 1 ? '' : 's'} between</span></div>
-    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em><small>${esc(daySummary(u.prog, x.day))}</small></span><span class="chev">+</span></summary>
+    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em>${DAY_NOTES[u.prog.id + '|' + x.day.name] ? `<span class="brief">${esc(DAY_NOTES[u.prog.id + '|' + x.day.name].brief)}</span>` : ''}<small>${esc(daySummary(u.prog, x.day))}</small></span><span class="chev">+</span></summary>
       <ol class="exlist">${x.day.exercises.map((e) => `<li>${exLabel(e)}<b>${e.sets}×${esc(e.reps)}</b></li>`).join('')}</ol>
       ${S.current ? '' : `<button class="link" data-act="start" data-p="${u.prog.id}" data-d="${x.idx}">Do this workout now ${IC.arrow}</button>`}
     </details>`).join('')}

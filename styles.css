@@ -285,3 +285,7 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .goallist li:first-child { border-top: 0; }
 .goallist b { display: block; font-weight: 600; }
 .goallist span { display: block; font-size: 13px; color: var(--label); }
+.hero .brief { margin: 2px 0 6px; color: var(--ink); font-size: 14px; }
+.upnext summary .brief { display: block; font-size: 13px; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+.goals h4 { margin-top: 14px; }
+.goals p { margin: 4px 0; }
