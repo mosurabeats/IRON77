@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '36'; // keep in step with VERSION in sw.js
+const APP_VERSION = '37'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -254,6 +254,7 @@ function finishSession() {
   if (c.exercises.length) {
     const cy = S.cycle && !S.cycle.done && S.cycle.programId === c.programId ? S.cycle : null;
     S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets, warm }) => ({ name, sets, ...(warm.length ? { warm } : {}) })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
+    S.sessions.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0)); // back-dated logs slot into place
     const prog = progById(c.programId);
     S.nextDay[c.programId] = (c.dayIdx + 1) % prog.days.length;
     if (cy) {
@@ -564,7 +565,10 @@ function weekCard(prog, ph, r) {
       const dn = DAY_NOTES[prog.id + '|' + sl.day.name];
       return `<details class="upnext slot${sl.done ? ' done' : ''}"><summary><span><b>${sl.done ? '\u2713 ' : ''}${esc(label)}</b>${sl.done ? '<em>Done</em>' : ''}${dn && !sl.done ? `<span class="brief">${esc(dn.brief)}</span>` : ''}<small>${esc(daySummary(prog, sl.day))}</small></span><span class="chev">+</span></summary>
         <ol class="exlist">${sl.day.exercises.map((x) => `<li>${exLabel(x, '', prog.id)}<b>${adjSets(x.sets, ph.setsMod)}×${esc(x.reps)}</b></li>`).join('')}</ol>
-        ${sl.done || S.current ? '' : `<button class="btn" data-act="startslot" data-i="${sl.i}" data-d="${sl.dayIdx}">Start ${esc(label)}</button>`}
+        ${sl.done
+          ? `<button class="link muted" data-act="slotundo" data-i="${sl.i}">Undo, mark as not done</button>`
+          : `${S.current ? '' : `<button class="btn" data-act="startslot" data-i="${sl.i}" data-d="${sl.dayIdx}">Start ${esc(label)}</button>`}
+             <p class="muted small slotalt">Already did it? Start it, set the date to the day you trained and log your sets, or <button class="link" data-act="slotdone" data-i="${sl.i}" data-n="${esc(sl.day.name)}">just mark it done</button>.</p>`}
       </details>`;
     }).join('')}
     ${nextWk ? `<p class="muted small nextwk">Next: Week ${nextWk} \u00b7 ${PHASE_NAMES[nextWk - 1]} \u2014 ${esc((PHASES[prog.style] || PHASES.Classic).text[nextWk - 1])}</p>` : '<p class="muted small nextwk">Last week of the cycle. Your review follows.</p>'}
@@ -681,6 +685,7 @@ V.session = () => {
     <div class="row"><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
     <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
     <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
+  <label class="sdate">Workout date<input type="date" data-act="sessdate" value="${esc(c.date)}" max="${today()}"></label>
   ${goalsCard(c, prog)}
   ${warmupCard(c)}
   ${c.exercises.map((ex, ei) => {
@@ -1556,6 +1561,21 @@ document.addEventListener('click', (ev) => {
       if (S.cycle && !S.cycle.done) { ask(`End cycle ${S.cycle.n} early and start a new one?`, 'Start new cycle', () => { S.cycle.end = today(); startCycle(d.p, d.g); }); break; }
       startCycle(d.p, d.g); break;
     case 'cyclereview': openSheet(cycleReviewSheet()); break;
+    case 'slotdone': {
+      const cy = S.cycle, wk = cycleWeek(cy);
+      ask(`Mark ${d.n} as done for week ${wk} without logging sets?`, 'Mark done', () => {
+        markSlot(cy, wk, d.n, +d.i); cy.sessions++;
+        if (cy.sessions >= cycleInfo(cy).total) { cy.done = true; cy.end = today(); }
+        save(); render(); toast(`${d.n} marked done.`);
+      });
+      break;
+    }
+    case 'slotundo': {
+      const cy = S.cycle, wk = cycleWeek(cy), done = (cy.slots || {})[wk] || [];
+      const k = done.indexOf(+d.i);
+      if (k >= 0) { done.splice(k, 1); cy.sessions = Math.max(0, cy.sessions - 1); save(); render(); toast('Marked as not done.'); }
+      break;
+    }
     case 'startslot':
       if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }); }); break; }
       startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }); break;
@@ -1627,6 +1647,9 @@ document.addEventListener('change', (ev) => {
     S.equipSet = true; save();
   } else if (d.act === 'setting') {
     const v = parseFloat(el.value); if (!isNaN(v) && v > 0) { S.settings[d.k] = v; save(); render(); }
+  } else if (d.act === 'sessdate') {
+    if (el.value && el.value <= today()) { S.current.date = el.value; save(); toast(el.value === today() ? 'Logging for today.' : `Logging for ${fmtDate(el.value)}.`); }
+    else el.value = S.current.date;
   } else if (d.act === 'warmval') {
     const st = S.current.exercises[+d.e].warm[+d.s];
     let v = el.value.trim();
