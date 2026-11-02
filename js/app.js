@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '28'; // keep in step with VERSION in sw.js
+const APP_VERSION = '29'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -207,11 +207,11 @@ function liftSheet(name) {
     <button class="btn ghost" data-act="demo" data-n="${esc(name)}">How to do it</button>`;
 }
 
-function startSession(progId, dayIdx) {
+function startSession(progId, dayIdx, slot = null) {
   const prog = progById(progId);
   const day = prog.days[dayIdx];
   S.current = {
-    id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name,
+    id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name, slot,
     exercises: day.exercises.map((ex) => {
       const res = resolveEx(ex.name, prog.id);
       const last = lastPerformance(res.name);
@@ -234,7 +234,11 @@ function finishSession() {
     S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets }) => ({ name, sets })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
     const prog = progById(c.programId);
     S.nextDay[c.programId] = (c.dayIdx + 1) % prog.days.length;
-    if (cy) { cy.sessions++; if (cy.sessions >= cycleInfo(cy).total) { cy.done = true; cy.end = today(); } }
+    if (cy) {
+      markSlot(cy, cycleWeek(cy), c.dayName, c.slot && c.slot.wk === cycleWeek(cy) ? c.slot.i : null);
+      cy.sessions++;
+      if (cy.sessions >= cycleInfo(cy).total) { cy.done = true; cy.end = today(); }
+    }
   }
   S.current = null; save(); stopTimer(); go('today');
   if (S.cycle?.done && S.cycle.end === today() && c.exercises.length) toast('Cycle complete! Your review is on Today.');
@@ -266,6 +270,22 @@ function cycleInfo(cy = S.cycle) {
   return { per, total, wk, phase: PHASE_NAMES[wk - 1], inWeek: Math.min(per, cy.sessions - (wk - 1) * per) };
 }
 const cycleWeek = (cy) => cycleInfo(cy).wk;
+// The workouts that make up a cycle week (the program's days in order, continuing across weeks).
+function weekSlots(cy, wk) {
+  const prog = progById(cy.programId), per = CYCLE_PER_WEEK[cy.programId] || 3, done = (cy.slots || {})[wk] || [];
+  return Array.from({ length: per }, (_, i) => {
+    const dayIdx = ((wk - 1) * per + i) % prog.days.length;
+    return { i, dayIdx, day: prog.days[dayIdx], done: done.includes(i) };
+  });
+}
+function markSlot(cy, wk, dayName, slotIdx) {
+  cy.slots ||= {};
+  const done = (cy.slots[wk] ||= []);
+  const slots = weekSlots(cy, wk);
+  let i = slotIdx != null && !done.includes(slotIdx) ? slotIdx : -1;
+  if (i < 0) i = (slots.find((sl) => !sl.done && sl.day.name === dayName) || slots.find((sl) => !sl.done) || {}).i ?? -1;
+  if (i >= 0) done.push(i);
+}
 function phaseFor(prog) {
   const cy = cycleActive(); if (!cy || cy.programId !== prog.id) return null;
   const i = cycleInfo(cy), ph = PHASES[prog.style] || PHASES.Classic;
@@ -300,22 +320,16 @@ function startCycle(progId, goal) {
   if (S.cycle) (S.cycleHistory ||= []).push({ n: S.cycle.n, programId: S.cycle.programId, goal: S.cycle.goal, start: S.cycle.start, end: S.cycle.end || today(), sessions: S.cycle.sessions });
   const n = (S.cycleCount || 0) + 1;
   S.cycleCount = n; S.goal = goal;
-  // Workouts from this program in the last 3 days (not already in a cycle) count toward week 1,
-  // and the day rotation carries on from where you left off.
-  const recent = S.sessions.filter((x) => x.programId === progId && !x.cycle && daysBetween(x.date, today()) <= 3);
-  recent.forEach((x) => { x.cycle = n; x.week = 1; });
-  S.cycle = { n, programId: progId, goal, start: recent.length ? recent[0].date : today(), sessions: recent.length, rot: buildRotation(prog, n), done: false };
-  S.activeProgram = progId;
-  if (!recent.length) S.nextDay[progId] = 0;
+  S.cycle = { n, programId: progId, goal, start: today(), sessions: 0, slots: {}, rot: buildRotation(prog, n), done: false };
+  S.activeProgram = progId; S.nextDay[progId] = 0;
   save(); closeSheet(); go('today');
   const rotated = Object.keys(S.cycle.rot).length;
-  const counted = recent.length ? ` Counted ${recent.map((x) => `${x.dayName} (${fmtShort(x.date)})`).join(', ')} toward week 1.` : '';
-  toast(`Cycle ${n} started: ${prog.name}${rotated ? ` with ${rotated} rotated exercise${rotated === 1 ? '' : 's'}` : ''}.${counted}`);
+  toast(`Cycle ${n} started: ${prog.name}${rotated ? ` with ${rotated} rotated exercise${rotated === 1 ? '' : 's'}` : ''}. Pick any workout from this week.`);
 }
 function cycleStartSheet(goal = S.goal || 'size') {
   const sug = suggestPrograms(goal);
   return `<h2>Start a 6-week cycle</h2>
-    <p class="muted small">Each cycle runs Groove → Build → Push → Peak → Deload. A week ends when you finish its sessions, so a missed day doesn't put you behind. Workouts you logged for the chosen program in the last 3 days count toward week 1.</p>
+    <p class="muted small">Each cycle runs Groove → Build → Push → Peak → Deload. A week ends when you finish its sessions, so a missed day doesn't put you behind. You'll see the whole week's workouts and can do them in any order.</p>
     <h4>Your goal</h4>
     <div class="goalpick">${TRAIN_GOALS.map((g) => `<button class="${g.id === goal ? 'on' : ''}" data-act="cyclegoal" data-g="${g.id}"><b>${esc(g.name)}</b><span>${esc(g.desc)}</span></button>`).join('')}</div>
     ${(() => { const cur = progById(S.activeProgram); return sug.slice(0, 3).some((x) => x.p.id === cur.id) ? '' : `<h4>Your current program</h4>
@@ -457,6 +471,30 @@ const IC = {
 
 const V = {};
 
+function weekCard(prog, ph, r) {
+  const cy = S.cycle, slots = weekSlots(cy, ph.wk), doneN = slots.filter((x) => x.done).length;
+  const nextWk = ph.wk < CYCLE_WEEKS ? ph.wk + 1 : null;
+  const dup = {}; slots.forEach((sl) => { dup[sl.day.name] = (dup[sl.day.name] || 0) + 1; });
+  const seen = {};
+  return `<section class="card hero week">
+    <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
+    <div class="kicker cycline">Cycle ${ph.n} · Week ${ph.wk} of 6 · ${ph.phase}</div>
+    <h2>This week</h2>
+    <p class="phase"><b>${esc(ph.phase)}:</b> ${esc(ph.text)}</p>
+    <p class="muted small">${doneN} of ${slots.length} done · pick any workout, in any order.${prog.restDays ? ` ${esc(r.msg)}` : ''}</p>
+    ${slots.map((sl) => {
+      seen[sl.day.name] = (seen[sl.day.name] || 0) + 1;
+      const label = sl.day.name + (dup[sl.day.name] > 1 ? ` ${seen[sl.day.name] === 1 ? 'A' : 'B'}` : '');
+      const dn = DAY_NOTES[prog.id + '|' + sl.day.name];
+      return `<details class="upnext slot${sl.done ? ' done' : ''}"><summary><span><b>${sl.done ? '\u2713 ' : ''}${esc(label)}</b>${sl.done ? '<em>Done</em>' : ''}${dn && !sl.done ? `<span class="brief">${esc(dn.brief)}</span>` : ''}<small>${esc(daySummary(prog, sl.day))}</small></span><span class="chev">+</span></summary>
+        <ol class="exlist">${sl.day.exercises.map((x) => `<li>${exLabel(x, '', prog.id)}<b>${adjSets(x.sets, ph.setsMod)}×${esc(x.reps)}</b></li>`).join('')}</ol>
+        ${sl.done || S.current ? '' : `<button class="btn" data-act="startslot" data-i="${sl.i}" data-d="${sl.dayIdx}">Start ${esc(label)}</button>`}
+      </details>`;
+    }).join('')}
+    ${nextWk ? `<p class="muted small nextwk">Next: Week ${nextWk} \u00b7 ${PHASE_NAMES[nextWk - 1]} \u2014 ${esc((PHASES[prog.style] || PHASES.Classic).text[nextWk - 1])}</p>` : '<p class="muted small nextwk">Last week of the cycle. Your review follows.</p>'}
+  </section>`;
+}
+
 V.today = () => {
   const r = recovery();
   const prog = r.prog;
@@ -476,9 +514,9 @@ V.today = () => {
     <button class="btn" data-act="go" data-v="session">Resume Workout</button>
     <button class="btn ghost danger" data-act="discard">Discard Workout</button></section>` : ''}
 
+  ${ph ? weekCard(prog, ph, r) : `
   <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
-    ${ph ? `<div class="kicker cycline">Cycle ${ph.n} · Week ${ph.wk} of 6 · ${ph.phase}</div>` : ''}
     <h2>Next: ${esc(day.name)}</h2>
     ${DAY_NOTES[prog.id + '|' + day.name] ? `<p class="brief">${esc(DAY_NOTES[prog.id + '|' + day.name].brief)}</p>` : ''}
     <p class="sumline">${esc(daySummary(prog, day))}</p>
@@ -498,7 +536,7 @@ V.today = () => {
     </details>`).join('')}
     <p class="muted small">Estimated dates, assuming you train as soon as you're recovered.</p>
   </section>`;
-  })()}
+  })()}`}
 
   <section class="card">
     <div class="row between"><h3>Today's protocol</h3><button class="link" data-act="go" data-v="stack">Manage ${IC.arrow}</button></div>
@@ -1422,6 +1460,9 @@ document.addEventListener('click', (ev) => {
       if (S.cycle && !S.cycle.done) { ask(`End cycle ${S.cycle.n} early and start a new one?`, 'Start new cycle', () => { S.cycle.end = today(); startCycle(d.p, d.g); }); break; }
       startCycle(d.p, d.g); break;
     case 'cyclereview': openSheet(cycleReviewSheet()); break;
+    case 'startslot':
+      if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }); }); break; }
+      startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }); break;
     case 'cyclelater': S.cycleLater = true; save(); render(); toast('You can start a cycle any time from Train.'); break;
     case 'cycleend': ask(`End cycle ${S.cycle.n} now? You'll go to its review.`, 'End cycle', () => { S.cycle.done = true; S.cycle.end = today(); save(); render(); openSheet(cycleReviewSheet()); }); break;
     case 'closesheet': closeSheet(); break;
