@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '32'; // keep in step with VERSION in sw.js
+const APP_VERSION = '33'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -218,19 +218,33 @@ function startSession(progId, dayIdx, slot = null) {
       return {
         name: res.name, from: res.from || '', target: `${n} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
         sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', done: false })),
+        warm: lastWarmups(res.name),
       };
     }),
   };
   save(); go('session');
 }
 
+// Warm-up sets logged for an exercise last time, ready to reuse (not marked done).
+function lastWarmups(name) {
+  for (let i = S.sessions.length - 1; i >= 0; i--) {
+    const ex = S.sessions[i].exercises.find((e) => e.name === name);
+    if (ex && ex.warm && ex.warm.length) return ex.warm.map(({ w, r, eff }) => ({ w, r, eff, done: false }));
+  }
+  return [];
+}
+const warmDefault = () => +S.settings.warmEff || 60;
+
 function finishSession() {
   const c = S.current;
-  c.exercises.forEach((e) => { e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r }) => ({ w, r })); });
-  c.exercises = c.exercises.filter((e) => e.sets.length);
+  c.exercises.forEach((e) => {
+    e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r }) => ({ w, r }));
+    e.warm = (e.warm || []).filter((s) => s.done || +s.r > 0 || +s.w > 0).map(({ w, r, eff }) => ({ w, r, eff }));
+  });
+  c.exercises = c.exercises.filter((e) => e.sets.length || e.warm.length);
   if (c.exercises.length) {
     const cy = S.cycle && !S.cycle.done && S.cycle.programId === c.programId ? S.cycle : null;
-    S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets }) => ({ name, sets })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
+    S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets, warm }) => ({ name, sets, ...(warm.length ? { warm } : {}) })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
     const prog = progById(c.programId);
     S.nextDay[c.programId] = (c.dayIdx + 1) % prog.days.length;
     if (cy) {
@@ -569,7 +583,7 @@ V.train = () => {
     const pr = sessionProgress(s);
     return `<details class="card log"><summary><div><b>${esc(s.dayName)}</b> <span class="muted">· ${esc(fmtDate(s.date))}</span></div>
       ${pr.total ? `<span class="badge ${pr.up / pr.total >= 0.5 ? 'ok' : 'wait'}">${pr.up}/${pr.total} ↑</span>` : ''}</summary>
-      ${s.exercises.map((e) => `<div class="row between small"><span>${esc(e.name)}</span><span>${e.sets.map((x) => `${esc(x.w)}×${esc(x.r)}`).join(', ')}</span></div>`).join('')}
+      ${s.exercises.map((e) => `<div class="row between small"><span>${esc(e.name)}</span><span>${(e.warm && e.warm.length ? `<em class="wu">W: ${e.warm.map((x) => `${esc(x.w)}×${esc(x.r)}@${esc(x.eff)}%`).join(', ')}</em> ` : '') + e.sets.map((x) => `${esc(x.w)}×${esc(x.r)}`).join(', ')}</span></div>`).join('')}
       <button class="link danger" data-act="delsession" data-id="${s.id}">Delete session</button></details>`;
   }).join('') : '<p class="muted pad">No sessions yet. Your logbook starts with the first rep.</p>'}`;
 };
@@ -614,6 +628,20 @@ V.session = () => {
       ${ex.note ? `<p class="muted small">${esc(ex.note)}</p>` : ''}
       ${last ? `<p class="small muted">Last: ${esc(last.w)} ${unit} × ${esc(last.r)} · ${esc(fmtDate(last.date))}</p>` : ''}
       ${hint ? `<p class="small hint">↑ ${hint}</p>` : ''}
+      ${(ex.warm || []).length ? `<div class="sets warm">
+        <div class="set head w"><span>W</span><span>${unit}</span><span>reps</span><span>effort</span><span></span></div>
+        ${ex.warm.map((s, wi) => {
+          const base = +(ex.sets.find((x) => +x.w > 0) || {}).w || (last ? +last.w : 0);
+          const inc = unit === 'kg' ? 2.5 : 5, sug = base ? Math.round((base * (+s.eff || warmDefault()) / 100) / inc) * inc : '';
+          return `<div class="set w${s.done ? ' done' : ''}">
+          <span>W${wi + 1}</span>
+          <input inputmode="decimal" data-act="warmval" data-e="${ei}" data-s="${wi}" data-k="w" value="${esc(s.w)}" placeholder="${sug ? '~' + sug : unit}" aria-label="Warm-up weight">
+          <input inputmode="numeric" data-act="warmval" data-e="${ei}" data-s="${wi}" data-k="r" value="${esc(s.r)}" placeholder="reps" aria-label="Warm-up reps">
+          <label class="eff"><input inputmode="numeric" data-act="warmval" data-e="${ei}" data-s="${wi}" data-k="eff" value="${esc(s.eff)}" aria-label="Warm-up effort percent"><i>%</i></label>
+          <button class="tick" data-act="warmdone" data-e="${ei}" data-s="${wi}" aria-label="Mark warm-up done">${IC.check}</button>
+        </div>`; }).join('')}
+      </div>` : ''}
+      <div class="row warmlinks"><button class="link" data-act="addwarm" data-e="${ei}">+ Warm-up set</button>${(ex.warm || []).length ? `<button class="link muted" data-act="delwarm" data-e="${ei}">Remove last warm-up</button>` : ''}</div>
       <div class="sets">
         <div class="set head"><span>#</span><span>${unit}</span><span>reps</span><span></span></div>
         ${ex.sets.map((s, si) => `<div class="set${s.done ? ' done' : ''}">
@@ -815,6 +843,11 @@ V.settings = () => `
     <div class="row between"><h3>Reconstitution & dose calculator</h3>${IC.arrow}</div>
     <p class="muted small">Vial + water + dose → how many units to draw.</p>
   </button>
+  <section class="card">
+    <div class="kicker">Warm-ups</div>
+    <label>Default warm-up effort (%)<input inputmode="numeric" data-act="setting" data-k="warmEff" value="${warmDefault()}"></label>
+    <p class="muted small">New warm-up sets start at this effort. You can change it on each set.</p>
+  </section>
   <section class="card">
     <div class="kicker">Look</div>
     <div class="seg">${[['v1', 'Version 1 · Classic'], ['v2', 'Version 2 · Glass']].map(([k, n]) => `<button class="${(S.settings.look || 'v2') === k ? 'on' : ''}" data-act="setlook" data-k="${k}">${n}</button>`).join('')}</div>
@@ -1476,6 +1509,14 @@ document.addEventListener('click', (ev) => {
         break;
       }
       S.activeProgram = d.id; save(); toast('Program activated.'); render(); break;
+    case 'addwarm': {
+      const ex = S.current.exercises[+d.e]; ex.warm ||= [];
+      const prev = ex.warm[ex.warm.length - 1];
+      ex.warm.push({ w: '', r: prev ? prev.r : '', eff: prev ? prev.eff : warmDefault(), done: false });
+      save(); render(); break;
+    }
+    case 'delwarm': S.current.exercises[+d.e].warm.pop(); save(); render(); break;
+    case 'warmdone': { const st = S.current.exercises[+d.e].warm[+d.s]; st.done = !st.done; save(); render(); break; }
     case 'addset': {
       const ex = S.current.exercises[+d.e]; const lastSet = ex.sets[ex.sets.length - 1];
       ex.sets.push({ w: lastSet ? lastSet.w : '', r: '', done: false }); save(); render(); break;
@@ -1508,6 +1549,18 @@ document.addEventListener('change', (ev) => {
     S.equipSet = true; save();
   } else if (d.act === 'setting') {
     const v = parseFloat(el.value); if (!isNaN(v) && v > 0) { S.settings[d.k] = v; save(); render(); }
+  } else if (d.act === 'warmval') {
+    const st = S.current.exercises[+d.e].warm[+d.s];
+    let v = el.value.trim();
+    if (d.k === 'eff') {
+      v = Math.max(1, Math.min(100, Math.round(+v) || warmDefault())); el.value = v;
+      // refresh this row's suggested weight for the new effort
+      const ex = S.current.exercises[+d.e], last = lastPerformance(ex.name), u = S.settings.unit, inc = u === 'kg' ? 2.5 : 5;
+      const base = +(ex.sets.find((x) => +x.w > 0) || {}).w || (last ? +last.w : 0);
+      const wIn = el.closest('.set')?.querySelector('[data-k="w"]');
+      if (wIn && base) wIn.placeholder = '~' + Math.round((base * v / 100) / inc) * inc;
+    }
+    st[d.k] = v; save();
   } else if (d.act === 'setval') {
     // Fill the sets below with the same value: only ones not yet ticked off that are empty
     // or still match what this set held before (so values you typed differently are kept).

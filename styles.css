@@ -402,3 +402,16 @@ html.v2 .exname { text-decoration-color: rgba(231,231,225,.25); }
 html.v2 .exrow, html.v2 .exname, html.v2 .check, html.v2 .chip, html.v2 .link, html.v2 .dose-main, html.v2 .foods li, html.v2 .goalpick button, html.v2 .askq { font-family: var(--sans); }
 html.v2 .link { font-weight: 600; }
 html.v2 .exrow em { font-family: var(--sans); }
+
+/* warm-up sets */
+.sets.warm { margin: 8px 0 2px; padding: 8px 10px 4px; border-radius: 12px; background: rgba(0,0,0,.12); border: 1px dashed var(--line); }
+.set.w { grid-template-columns: 26px 1fr 1fr 62px 40px; gap: 6px; }
+.set.w > span:first-child { color: var(--label); font-size: 12px; }
+.set.w input { padding: 10px 2px; opacity: .92; }
+.set.w .tick { height: 40px; }
+.eff { position: relative; display: block; text-transform: none; letter-spacing: 0; margin: 0; }
+.eff input { margin: 0; padding-right: 16px !important; }
+.eff i { position: absolute; right: 7px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px; color: var(--label); pointer-events: none; }
+.warmlinks { justify-content: space-between; margin-top: 2px; }
+.link.muted { color: var(--label); font-weight: 500; }
+.log .wu { font-style: normal; color: var(--label); opacity: .8; }
