@@ -607,3 +607,66 @@ const DAY_NOTES = {
     philosophy: 'Gironda wasn’t a fan of heavy back squats for everyone; he preferred hack and sissy squats to build the quads without thickening the hips. Shape and density over sheer size.',
   },
 };
+
+/* ---------- 6-week training cycles ---------- */
+const TRAIN_GOALS = [
+  { id: 'size', name: 'Build size', desc: 'Add muscle mass all over.' },
+  { id: 'strength', name: 'Get stronger', desc: 'Move more weight on the big lifts.' },
+  { id: 'shape', name: 'Shape & proportion', desc: 'Classic lines: symmetry, detail and weak points.' },
+  { id: 'brief', name: 'Short & efficient', desc: 'Brief workouts with plenty of recovery.' },
+  { id: 'foundation', name: 'All-round foundation', desc: 'Solid basics, conditioning and good habits.' },
+];
+/* How well each program fits each goal (0-3), plus why. */
+const PROGRAM_FIT = {
+  'heavy-duty': { size: 3, strength: 1, shape: 1, brief: 3, foundation: 1, level: 2, why: { size: 'All-out intensity with full recovery, the Mentzer way to grow.', brief: 'Three short sessions spread over two weeks.' } },
+  'consolidation': { size: 1, strength: 3, shape: 0, brief: 3, foundation: 0, level: 3, why: { strength: 'Big compound lifts only, with long recovery to keep getting stronger.', brief: 'Two movements a session: the bare minimum that works.' } },
+  'colorado': { size: 2, strength: 1, shape: 1, brief: 2, foundation: 3, level: 1, why: { foundation: 'Brief full-body circuits that build strength and conditioning together.', size: 'Fast full-body HIT, in the spirit of the Colorado Experiment.' } },
+  'golden-six': { size: 2, strength: 2, shape: 1, brief: 1, foundation: 3, level: 1, why: { foundation: 'The six classic basics: the base every golden-era champion built on.', size: 'Full-body basics done often build a solid base of muscle.' } },
+  'park-5x5': { size: 2, strength: 3, shape: 0, brief: 1, foundation: 2, level: 1, why: { strength: 'Heavy 5×5 on the big lifts: Reg Park’s strength base.', foundation: 'Simple heavy basics that build real strength.' } },
+  'arnold-split': { size: 3, strength: 1, shape: 2, brief: 0, foundation: 0, level: 3, why: { size: 'Venice Beach volume for maximum pump and mass.', shape: 'Volume and variety to bring up every body part.' } },
+  'gironda-8x8': { size: 2, strength: 0, shape: 3, brief: 1, foundation: 1, level: 2, why: { shape: 'Gironda’s density training and exercise choice sculpt shape and detail.', size: '8×8 density work builds muscle without heavy loads.' } },
+};
+/* Sessions that make up one cycle-week (a week ends when you finish them, like Ladder). */
+const CYCLE_PER_WEEK = { 'heavy-duty': 2, 'consolidation': 1, 'colorado': 3, 'golden-six': 3, 'park-5x5': 3, 'arnold-split': 6, 'gironda-8x8': 3 };
+const CYCLE_WEEKS = 6;
+const PHASE_NAMES = ['Groove', 'Build', 'Build', 'Push', 'Peak', 'Deload'];
+/* Per training style: what each week asks of you, and how working sets change ('half' = halve them). */
+const PHASES = {
+  HIT: { sets: [0, 0, 0, 0, 0, 0], text: [
+    'Set your weights and dial in form. Stop each set 1–2 reps short of failure.',
+    'Every working set to true failure. Beat the logbook.',
+    'Every working set to true failure. Beat the logbook again.',
+    'After reaching failure, add 2–3 forced reps, or finish with one slow 8-second negative.',
+    'Rest-pause: after failure, rest 10–15 seconds, then squeeze out 1–2 more reps.',
+    'Deload: one set per exercise, stopping 2 reps short of failure. Test one key lift with a single all-out set.'] },
+  Volume: { sets: [-1, 0, 1, 1, 1, 'half'], text: [
+    'One set fewer than normal. Find your weights and groove each movement.',
+    'Full program volume. Chase the pump with controlled reps.',
+    'One extra set on each exercise. Keep rests honest.',
+    'Extra set, and make the last set of each exercise a drop set.',
+    'Shocking week: extra set, supersets and drop sets where they fit. The hardest week of the cycle.',
+    'Deload: half the sets at a comfortable weight. Let everything recover.'] },
+  Strength: { sets: [0, 0, 0, 0, 0, 'half'], text: [
+    'Start at about 90% of your last bests. Fast, clean reps.',
+    'Add weight every session you complete all your reps.',
+    'Keep adding weight. Rest the full 2–3 minutes.',
+    'Bigger jumps where the bar moved fast last time. Rest up to 4 minutes.',
+    'Peak: after your 5×5, work up to one heavy triple on the first lift.',
+    'Deload: half the sets at about 80%. Test one lift with a heavy set of 3.'] },
+  Classic: { sets: [-1, 0, 0, 1, 1, 'half'], text: [
+    'One set fewer than normal. Set your weights with clean reps.',
+    'Full sets. Add weight once every set hits the target reps.',
+    'Full sets. Push for an extra rep on each.',
+    'One extra set per exercise.',
+    'Extra set, and take the last set of each exercise close to failure.',
+    'Deload: half the sets at a comfortable weight.'] },
+  Density: { sets: [0, 0, 0, 0, 0, 'half'], text: [
+    '8×8 with 30 seconds’ rest. Find a weight you can complete all 64 reps with.',
+    '8×8 with 25–30 seconds’ rest. Add weight if you finish every rep.',
+    '8×8 with 25 seconds’ rest.',
+    '8×8 with only 20 seconds’ rest.',
+    '8×8 with 15 seconds’ rest: Gironda’s "honest workout" at its most honest.',
+    'Deload: 4×8 with 30 seconds’ rest at a comfortable weight.'] },
+};
+/* Lifts that define their programs and never rotate. */
+const CORE_LIFTS = new Set(['Squat', 'Deadlift', 'Bench Press', 'Overhead Press']);

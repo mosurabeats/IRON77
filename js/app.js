@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '25'; // keep in step with VERSION in sw.js
+const APP_VERSION = '26'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -60,13 +60,15 @@ const equipName = (k) => (EQUIPMENT.find(([id]) => id === k) || [k, k])[1];
 const missingFor = (n) => (lib(n) ? lib(n)[1].filter((k) => !S.equipment.includes(k)) : []);
 const canDo = (n) => missingFor(n).length === 0;
 // What the athlete will actually do for a programmed exercise, given swaps and equipment.
-function resolveEx(name) {
+function resolveEx(name, progId) {
+  const cy = S.cycle;
+  if (progId && cy && !cy.done && cy.programId === progId && cy.rot && cy.rot[name] && canDo(cy.rot[name])) return { name: cy.rot[name], from: name, why: `cycle ${cy.n} rotation` };
   if (canDo(name)) return { name };
   const alt = ((lib(name) || [])[2] || []).find(canDo);
   return alt ? { name: alt, from: name, why: 'no ' + missingFor(name).map(equipName).join(', ').toLowerCase() } : { name, missing: true };
 }
-const exLabel = (x, extra = '') => {
-  const r = resolveEx(x.name);
+const exLabel = (x, extra = '', progId) => {
+  const r = resolveEx(x.name, progId);
   return `<span><button class="exname" data-act="demo" data-n="${esc(r.name)}">${x.ss ? '⇄ ' : ''}${esc(r.name)}</button>`
     + (r.from ? `<em>↺ instead of ${esc(r.from)} (${esc(r.why)})</em>` : '')
     + (r.missing ? `<em class="warn">Needs ${esc(missingFor(r.name).map(equipName).join(', '))}</em>` : '')
@@ -211,11 +213,12 @@ function startSession(progId, dayIdx) {
   S.current = {
     id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name,
     exercises: day.exercises.map((ex) => {
-      const res = resolveEx(ex.name);
+      const res = resolveEx(ex.name, prog.id);
       const last = lastPerformance(res.name);
+      const ph = phaseFor(prog), n = ph ? adjSets(ex.sets, ph.setsMod) : ex.sets;
       return {
-        name: res.name, from: res.from || '', target: `${ex.sets} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
-        sets: Array.from({ length: ex.sets }, () => ({ w: last ? last.w : '', r: '', done: false })),
+        name: res.name, from: res.from || '', target: `${n} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
+        sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', done: false })),
       };
     }),
   };
@@ -227,12 +230,15 @@ function finishSession() {
   c.exercises.forEach((e) => { e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r }) => ({ w, r })); });
   c.exercises = c.exercises.filter((e) => e.sets.length);
   if (c.exercises.length) {
-    S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets }) => ({ name, sets })) });
+    const cy = S.cycle && !S.cycle.done && S.cycle.programId === c.programId ? S.cycle : null;
+    S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets }) => ({ name, sets })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
     const prog = progById(c.programId);
     S.nextDay[c.programId] = (c.dayIdx + 1) % prog.days.length;
+    if (cy) { cy.sessions++; if (cy.sessions >= cycleInfo(cy).total) { cy.done = true; cy.end = today(); } }
   }
   S.current = null; save(); stopTimer(); go('today');
-  if (c.exercises.length) toast('Session logged. Now go rest and grow.');
+  if (S.cycle?.done && S.cycle.end === today() && c.exercises.length) toast('Cycle complete! Your review is on Today.');
+  else if (c.exercises.length) toast('Session logged. Now go rest and grow.');
 }
 
 /* ---------- rest timer ---------- */
@@ -251,6 +257,118 @@ function startTimer(sec) {
 }
 function stopTimer() { clearInterval(timer); timer = null; const b = $('#timer'); if (b) b.hidden = true; }
 const restFor = (prog) => ({ HIT: 120, Strength: 180, Classic: 90, Volume: 75, Density: 30 }[prog.style] || 90);
+
+/* ---------- 6-week cycles ---------- */
+const cycleActive = () => (S.cycle && !S.cycle.done && S.cycle.programId === S.activeProgram ? S.cycle : null);
+function cycleInfo(cy = S.cycle) {
+  const per = CYCLE_PER_WEEK[cy.programId] || 3, total = per * CYCLE_WEEKS;
+  const wk = Math.min(CYCLE_WEEKS, Math.floor(cy.sessions / per) + 1);
+  return { per, total, wk, phase: PHASE_NAMES[wk - 1], inWeek: Math.min(per, cy.sessions - (wk - 1) * per) };
+}
+const cycleWeek = (cy) => cycleInfo(cy).wk;
+function phaseFor(prog) {
+  const cy = cycleActive(); if (!cy || cy.programId !== prog.id) return null;
+  const i = cycleInfo(cy), ph = PHASES[prog.style] || PHASES.Classic;
+  return { ...i, n: cy.n, text: ph.text[i.wk - 1], setsMod: ph.sets[i.wk - 1] };
+}
+const adjSets = (n, mod) => (mod === 'half' ? Math.max(1, Math.ceil(n / 2)) : Math.max(1, n + (n > 1 ? mod : 0)));
+// From cycle 2, swap about half the non-core exercises for a same-target variation.
+function buildRotation(prog, n) {
+  const rot = {}; if (n < 2) return rot;
+  const names = [...new Set(prog.days.flatMap((d) => d.exercises.map((x) => x.name)))];
+  names.forEach((name, i) => {
+    if (CORE_LIFTS.has(name) || (i + n) % 2) return;
+    const t = EX_TARGET[name];
+    const alts = (lib(name)?.[2] || []).filter((a) => EX_TARGET[a] === t && canDo(a) && !names.includes(a));
+    if (alts.length) rot[name] = alts[(n - 2) % alts.length];
+  });
+  return rot;
+}
+function suggestPrograms(goal) {
+  const total = S.sessions.length, hist = S.cycleHistory || [];
+  const recent = hist.slice(-2).map((h) => h.programId);
+  return PROGRAMS.map((p) => {
+    const f = PROGRAM_FIT[p.id]; let sc = (f[goal] || 0) * 10;
+    if (total < 24 && f.level >= 3) sc -= 12;
+    if (total < 24 && f.level === 1) sc += 3;
+    if (recent.length === 2 && recent.every((r) => r === p.id)) sc -= 8;
+    else if (recent[recent.length - 1] === p.id) sc -= 2;
+    return { p, sc, why: f.why[goal] || p.summary };
+  }).sort((a, b) => b.sc - a.sc);
+}
+function startCycle(progId, goal) {
+  const prog = progById(progId);
+  if (S.cycle) (S.cycleHistory ||= []).push({ n: S.cycle.n, programId: S.cycle.programId, goal: S.cycle.goal, start: S.cycle.start, end: S.cycle.end || today(), sessions: S.cycle.sessions });
+  const n = (S.cycleCount || 0) + 1;
+  S.cycleCount = n; S.goal = goal;
+  S.cycle = { n, programId: progId, goal, start: today(), sessions: 0, rot: buildRotation(prog, n), done: false };
+  S.activeProgram = progId; S.nextDay[progId] = 0;
+  save(); closeSheet(); go('today');
+  const rotated = Object.keys(S.cycle.rot).length;
+  toast(`Cycle ${n} started: ${prog.name}${rotated ? ` with ${rotated} rotated exercise${rotated === 1 ? '' : 's'}` : ''}.`);
+}
+function cycleStartSheet(goal = S.goal || 'size') {
+  const sug = suggestPrograms(goal);
+  return `<h2>Start a 6-week cycle</h2>
+    <p class="muted small">Each cycle runs Groove → Build → Push → Peak → Deload. A week ends when you finish its sessions, so a missed day doesn't put you behind.</p>
+    <h4>Your goal</h4>
+    <div class="goalpick">${TRAIN_GOALS.map((g) => `<button class="${g.id === goal ? 'on' : ''}" data-act="cyclegoal" data-g="${g.id}"><b>${esc(g.name)}</b><span>${esc(g.desc)}</span></button>`).join('')}</div>
+    <h4>Suggested program</h4>
+    ${sug.slice(0, 3).map((x, i) => `<div class="card sugprog${i === 0 ? ' top' : ''}">
+      <div class="row between"><span class="kicker">${i === 0 ? 'Best fit' : 'Also good'} · ${esc(x.p.legend)}</span><span class="badge">${CYCLE_PER_WEEK[x.p.id] * CYCLE_WEEKS} sessions</span></div>
+      <h3>${esc(x.p.name)}</h3><p class="muted small">${esc(x.why)}</p>
+      <button class="btn${i === 0 ? '' : ' ghost'}" data-act="cyclego" data-p="${x.p.id}" data-g="${goal}">Start with ${esc(x.p.name)}</button></div>`).join('')}
+    <details class="more"><summary>Other programs</summary>${sug.slice(3).map((x) => `<button class="link" data-act="cyclego" data-p="${x.p.id}" data-g="${goal}">${esc(x.p.name)} ${IC.arrow}</button>`).join('<br>')}</details>`;
+}
+function cycleReviewSheet() {
+  const cy = S.cycle, prog = progById(cy.programId);
+  const inCycle = S.sessions.filter((x) => x.date >= cy.start && x.programId === cy.programId);
+  const lifts = [...new Set(inCycle.flatMap((x) => x.exercises.map((e) => e.name)))];
+  const gains = lifts.map((n) => {
+    const h = liftHistory(n), before = h.pts.filter((p) => p.date < cy.start), during = h.pts.filter((p) => p.date >= cy.start);
+    if (!during.length) return null;
+    const best = during.reduce((a, p) => (p.val >= a.val ? p : a)), base = before.length ? before.reduce((a, p) => (p.val >= a.val ? p : a)) : during[0];
+    return { n, h, best, base, pct: base.val ? Math.round(((best.val - base.val) / base.val) * 1000) / 10 : 0, pr: !before.length || best.val > base.val };
+  }).filter(Boolean).sort((a, b) => b.pct - a.pct);
+  const prs = gains.filter((g) => g.pr && g.pct > 0);
+  return `<div class="kicker">Cycle ${cy.n} review · ${esc(prog.name)}</div>
+    <h2>Six weeks done</h2>
+    <div class="stats">
+      <div><span>Sessions</span><b>${inCycle.length}</b><em>${esc(fmtShort(cy.start))} \u2013 ${esc(fmtShort(cy.end || today()))}</em></div>
+      <div><span>Records</span><b>${prs.length}</b><em>lifts improved</em></div>
+      <div><span>Top gain</span><b class="up">${gains[0] && gains[0].pct > 0 ? '+' + gains[0].pct + '%' : '\u2014'}</b><em>${gains[0] && gains[0].pct > 0 ? esc(gains[0].n) : ''}</em></div>
+    </div>
+    ${gains.length ? `<h4>Your lifts this cycle</h4><div class="card list inset">${gains.slice(0, 8).map((g) => `<button class="exrow" data-act="liftchart" data-n="${esc(g.n)}"><span>${esc(g.n)}<em> · best ${esc(topSet(g.best))}</em></span><span class="badge ${g.pct > 0 ? 'ok' : ''}">${g.pct > 0 ? '+' : ''}${g.pct}%</span></button>`).join('')}</div>` : ''}
+    <h4>Next cycle</h4>
+    <p class="muted small">Goal: ${esc((TRAIN_GOALS.find((g) => g.id === cy.goal) || {}).name || '')}. Starting targets come from your bests, and some exercises rotate.</p>
+    ${(() => { const s1 = suggestPrograms(cy.goal)[0];
+      return `<button class="btn" data-act="cyclego" data-p="${s1.p.id}" data-g="${cy.goal}">Cycle ${cy.n + 1}: ${esc(s1.p.name)}</button>
+      <p class="muted small">${esc(s1.why)}</p>
+      ${s1.p.id !== cy.programId ? `<button class="btn ghost" data-act="cyclego" data-p="${cy.programId}" data-g="${cy.goal}">Repeat ${esc(prog.name)} with new exercises</button>` : ''}
+      <button class="btn ghost" data-act="cyclestart">Change goal or program</button>`; })()}`;
+}
+function cycleCard(where) {
+  const cy = S.cycle;
+  if (!cy) return `<section class="card cyclecta"><div class="kicker">6-week cycles</div><h3>Train in cycles that evolve</h3>
+    <p class="muted small">Pick a goal and IRON77 suggests a program, then runs it as six progressive weeks with a deload, a review and rotated exercises each new cycle.</p>
+    <button class="btn" data-act="cyclestart">Start a cycle</button></section>`;
+  if (cy.done) return `<section class="card hot"><div class="kicker">Cycle ${cy.n} complete</div><h3>Review your six weeks</h3>
+    <p class="muted small">See what improved and start cycle ${cy.n + 1}.</p><button class="btn" data-act="cyclereview">Review & plan next cycle</button></section>`;
+  const i = cycleInfo(cy), prog = progById(cy.programId);
+  const segs = Array.from({ length: CYCLE_WEEKS }, (_, w) => {
+    const fill = w + 1 < i.wk ? 1 : w + 1 === i.wk ? i.inWeek / i.per : 0;
+    return `<div class="seg-w${w + 1 === i.wk ? ' now' : ''}"><i style="width:${Math.round(fill * 100)}%"></i><span>${PHASE_NAMES[w]}</span></div>`;
+  }).join('');
+  const off = cy.programId !== S.activeProgram;
+  return `<section class="card cyclecard">
+    <div class="row between"><div class="kicker">Cycle ${cy.n} · ${esc((TRAIN_GOALS.find((g) => g.id === cy.goal) || {}).name || '')}</div><span class="badge">Week ${i.wk}/${CYCLE_WEEKS}</span></div>
+    <h3>${esc(prog.name)}</h3>
+    <div class="weeks">${segs}</div>
+    <p class="muted small">${off ? `Your active program is different from this cycle. Make ${esc(prog.name)} active to keep progressing.` : `${i.inWeek} of ${i.per} session${i.per === 1 ? '' : 's'} done this week · ${i.total - cy.sessions} left in the cycle.`}</p>
+    ${Object.keys(cy.rot || {}).length ? `<p class="muted small">Rotated this cycle: ${Object.entries(cy.rot).map(([a, b]) => `${esc(a)} \u2192 ${esc(b)}`).join(', ')}.</p>` : ''}
+    ${where === 'train' ? `<button class="link danger" data-act="cycleend">End this cycle early</button>` : ''}
+  </section>`;
+}
 
 /* ---------- workout summaries & goals ---------- */
 const STYLE_FLAVOR = { HIT: 'one all-out set each', Strength: 'heavy sets of 5', Classic: 'full-body basics', Volume: 'high-volume pump work', Density: '8\u00d78, short rests' };
@@ -274,7 +392,7 @@ const estMinutes = (prog, sets) => Math.max(10, Math.round((sets * (restFor(prog
 const restText = (prog) => { const r = restFor(prog); return r % 60 ? `${r} sec` : `${r / 60} min`; };
 // One-liner for the Next card and Coming up list.
 function daySummary(prog, day) {
-  const names = day.exercises.map((x) => resolveEx(x.name).name);
+  const names = day.exercises.map((x) => resolveEx(x.name, prog.id).name);
   const sets = day.exercises.reduce((a, x) => a + (+x.sets || 0), 0);
   return `${focusText(names)} \u00b7 ${names.length} exercise${names.length === 1 ? '' : 's'} \u00b7 ~${estMinutes(prog, sets)} min \u00b7 ${STYLE_FLAVOR[prog.style] || ''}`;
 }
@@ -283,6 +401,9 @@ function goalFor(ex, prog) {
   const last = lastPerformance(ex.name), top = upperReps(ex.reps), low = lowerReps(ex.reps), u = S.settings.unit, inc = u === 'kg' ? 2.5 : 5;
   if (!last) return `First time logging it: find a weight you can take to ${ex.reps === 'max' ? 'failure' : ex.reps + ' reps'} with strict form.`;
   const w = +last.w || 0, r = +last.r || 0;
+  const ph = phaseFor(prog), rnd = (v) => Math.round(v / inc) * inc;
+  if (ph && ph.wk === 1 && w > 0) return `Groove week: work up to about ${fmtNum(rnd(w * 0.9))} ${u} (90% of last time) for smooth reps.`;
+  if (ph && ph.wk === 6) return w > 0 ? `Deload: about ${fmtNum(rnd(w * (prog.style === 'Strength' ? 0.8 : 0.7)))} ${u}, comfortable reps.` : `Deload: easy reps, well short of failure.`;
   if (!(w > 0)) return `Beat ${r} reps.`;
   if (top && r >= top) {
     const nw = prog.style === 'HIT' ? Math.max(w + inc, Math.round((w * 1.05) / inc) * inc) : w + inc;
@@ -302,6 +423,7 @@ function goalsCard(c, prog) {
     <summary><div><div class="kicker">Today's goals</div><h3>${esc(focusText(names))}</h3></div><span class="chev">+</span></summary>
     <p class="muted small">${names.length} exercises \u00b7 ${sets} working set${sets === 1 ? '' : 's'} \u00b7 ~${estMinutes(prog, sets)} min \u00b7 rest ${restText(prog)}</p>
     ${notes.length ? `<p class="hint small">${esc(notes.join(' '))}</p>` : ''}
+    ${(() => { const ph = phaseFor(prog); return ph && c.programId === S.cycle.programId ? `<h4>This week \u00b7 Week ${ph.wk} of 6 \u00b7 ${esc(ph.phase)}</h4><p>${esc(ph.text)}</p>` : ''; })()}
     ${(() => { const dn = DAY_NOTES[c.programId + '|' + c.dayName]; return dn
       ? `<h4>Logistics</h4><p>${esc(dn.logistics)}</p><h4>Philosophy</h4><p>${esc(dn.philosophy)}</p>`
       : `<h4>Approach</h4><p>${esc(STYLE_BRIEF[prog.style] || '')}</p>`; })()}
@@ -329,6 +451,7 @@ V.today = () => {
   const prog = r.prog;
   const di = nextDayIdx(prog);
   const day = prog.days[di];
+  const ph = phaseFor(prog);
   const creed = CREED[new Date().getDate() % CREED.length];
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
@@ -336,6 +459,7 @@ V.today = () => {
   <header class="top"><div><div class="brand"><svg class="mark" viewBox="0 0 300 242" aria-hidden="true"><rect x="0" y="0" width="300" height="50" rx="8" fill="#33658C"/><rect x="32" y="64" width="236" height="50" rx="8" fill="#39B4F2"/><rect x="64" y="128" width="172" height="50" rx="8" fill="#E7E7E1"/><rect x="96" y="192" width="108" height="50" rx="8" fill="#E8343B"/></svg><b>IRON<span>77</span></b></div><h1>${greet}</h1><div class="muted">${esc(fmtDate(today()))}</div></div>
     <button class="icon" data-act="go" data-v="settings" aria-label="Settings">${IC.gear}</button></header>
   <p class="creed">“${esc(creed)}”</p>
+  ${!S.cycle || S.cycle.done || S.cycle.programId !== S.activeProgram ? cycleCard('today') : ''}
 
   ${S.current ? `<section class="card hot"><div class="kicker">In progress</div><h2>${esc(S.current.dayName)}</h2>
     <button class="btn" data-act="go" data-v="session">Resume Workout</button>
@@ -343,11 +467,13 @@ V.today = () => {
 
   <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
+    ${ph ? `<div class="kicker cycline">Cycle ${ph.n} · Week ${ph.wk} of 6 · ${ph.phase}</div>` : ''}
     <h2>Next: ${esc(day.name)}</h2>
     ${DAY_NOTES[prog.id + '|' + day.name] ? `<p class="brief">${esc(DAY_NOTES[prog.id + '|' + day.name].brief)}</p>` : ''}
     <p class="sumline">${esc(daySummary(prog, day))}</p>
+    ${ph ? `<p class="phase"><b>This week \u00b7 ${esc(ph.phase)}:</b> ${esc(ph.text)}</p>` : ''}
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
-    <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
+    <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x, '', prog.id)}<b>${(ph ? adjSets(x.sets, ph.setsMod) : x.sets)}×${esc(x.reps)}</b></li>`).join('')}</ol>
     ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
   </section>
 
@@ -356,7 +482,7 @@ V.today = () => {
     return `<section class="card">
     <div class="row between"><h3>Coming up</h3><span class="muted small">${u.gap - 1} rest day${u.gap - 1 === 1 ? '' : 's'} between</span></div>
     ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em>${DAY_NOTES[u.prog.id + '|' + x.day.name] ? `<span class="brief">${esc(DAY_NOTES[u.prog.id + '|' + x.day.name].brief)}</span>` : ''}<small>${esc(daySummary(u.prog, x.day))}</small></span><span class="chev">+</span></summary>
-      <ol class="exlist">${x.day.exercises.map((e) => `<li>${exLabel(e)}<b>${e.sets}×${esc(e.reps)}</b></li>`).join('')}</ol>
+      <ol class="exlist">${x.day.exercises.map((e) => `<li>${exLabel(e, '', u.prog.id)}<b>${e.sets}×${esc(e.reps)}</b></li>`).join('')}</ol>
       ${S.current ? '' : `<button class="link" data-act="start" data-p="${u.prog.id}" data-d="${x.idx}">Do this workout now ${IC.arrow}</button>`}
     </details>`).join('')}
     <p class="muted small">Estimated dates, assuming you train as soon as you're recovered.</p>
@@ -374,6 +500,7 @@ V.train = () => {
   const hist = [...S.sessions].reverse();
   return `
   <header class="top"><h1>Train</h1></header>
+  ${cycleCard('train')}
   <div class="tools">
     <button class="card tool wide" data-act="go" data-v="progress">
       <div class="row between"><h3>Progress</h3>${IC.arrow}</div>
@@ -414,7 +541,7 @@ V.program = (id) => {
   </section>
   ${p.days.map((d, i) => `<section class="card">
     <div class="row between"><h3>${esc(d.name)}</h3><button class="link" data-act="start" data-p="${p.id}" data-d="${i}">Start ${IC.arrow}</button></div>
-    <ol class="exlist">${d.exercises.map((x) => `<li>${exLabel(x, x.note ? `<em>${esc(x.note)}</em>` : '')}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
+    <ol class="exlist">${d.exercises.map((x) => `<li>${exLabel(x, x.note ? `<em>${esc(x.note)}</em>` : '', p.id)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
     <p class="muted small">Tap an exercise for form cues and demos.</p>
   </section>`).join('')}`;
 };
@@ -1278,6 +1405,13 @@ document.addEventListener('click', (ev) => {
     case 'go': if (d.v === 'equipment') { S.equipSet = true; save(); } closeSheet(); go(d.v, d.arg || null); break;
     case 'demo': openSheet(demoSheet(d.n, d.e != null ? +d.e : null)); break;
     case 'liftchart': openSheet(liftSheet(d.n)); break;
+    case 'cyclestart': openSheet(cycleStartSheet()); break;
+    case 'cyclegoal': S.goal = d.g; save(); openSheet(cycleStartSheet(d.g)); break;
+    case 'cyclego':
+      if (S.cycle && !S.cycle.done) { ask(`End cycle ${S.cycle.n} early and start a new one?`, 'Start new cycle', () => { S.cycle.end = today(); startCycle(d.p, d.g); }); break; }
+      startCycle(d.p, d.g); break;
+    case 'cyclereview': openSheet(cycleReviewSheet()); break;
+    case 'cycleend': ask(`End cycle ${S.cycle.n} now? You'll go to its review.`, 'End cycle', () => { S.cycle.done = true; S.cycle.end = today(); save(); render(); openSheet(cycleReviewSheet()); }); break;
     case 'closesheet': closeSheet(); break;
     case 'addex': openSheet(addSheet()); break;
     case 'addpick': addExercise(d.n); break;
