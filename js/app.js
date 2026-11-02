@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '18'; // keep in step with VERSION in sw.js
+const APP_VERSION = '19'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -160,28 +160,7 @@ function finishSession() {
     S.nextDay[c.programId] = (c.dayIdx + 1) % prog.days.length;
   }
   S.current = null; save(); stopTimer(); go('today');
-  if (c.exercises.length) toast('Session logged. Now go eat and rest.');
-}
-
-/* ---------- nutrition logic ---------- */
-function targets() {
-  const st = S.settings;
-  const bwLb = st.unit === 'kg' ? st.bodyweight * 2.2046 : +st.bodyweight;
-  const diet = DIETS.find((d) => d.id === st.diet) || DIETS[0];
-  const goal = GOALS.find((g) => g.id === st.goal) || GOALS[0];
-  const kcal = Math.round(bwLb * st.activity + goal.kcal);
-  let p, c, f;
-  if (diet.proteinPerLb) {
-    p = bwLb * diet.proteinPerLb; f = (kcal * diet.pct.f) / 9; c = Math.max(0, (kcal - p * 4 - f * 9) / 4);
-  } else {
-    p = (kcal * diet.pct.p) / 4; c = (kcal * diet.pct.c) / 4; f = (kcal * diet.pct.f) / 9;
-  }
-  return { kcal, p: Math.round(p), c: Math.round(c), f: Math.round(f), diet, goal };
-}
-const kcalOf = (x) => Math.round(x.p * 4 + x.c * 4 + x.f * 9);
-function eaten(date = today()) {
-  const list = S.food[date] || [];
-  return list.reduce((a, x) => ({ p: a.p + +x.p, c: a.c + +x.c, f: a.f + +x.f, kcal: a.kcal + kcalOf(x) }), { p: 0, c: 0, f: 0, kcal: 0 });
+  if (c.exercises.length) toast('Session logged. Now go rest and grow.');
 }
 
 /* ---------- rest timer ---------- */
@@ -202,11 +181,6 @@ function stopTimer() { clearInterval(timer); timer = null; const b = $('#timer')
 const restFor = (prog) => ({ HIT: 120, Strength: 180, Classic: 90, Volume: 75, Density: 30 }[prog.style] || 90);
 
 /* ---------- views ---------- */
-const bar = (label, val, max, unit = 'g') => {
-  const pct = max ? Math.min(100, (val / max) * 100) : 0;
-  return `<div class="bar"><div class="bar-l"><span>${label}</span><span>${Math.round(val)} / ${max}${unit}</span></div>
-    <div class="bar-t"><div class="bar-f${val > max ? ' over' : ''}" style="width:${pct}%"></div></div></div>`;
-};
 const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const IC = {
   back: svg('<path d="M15 18l-6-6 6-6"/>'),
@@ -216,12 +190,6 @@ const IC = {
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
   play: svg('<path d="M7 4l13 8-13 8z" fill="currentColor" stroke="none"/>'),
 };
-const ring = (label, val, max, unit = 'g') => {
-  const pct = max ? Math.min(1, val / max) : 0, C = 2 * Math.PI * 26;
-  return `<div class="ring${val > max ? ' over' : ''}"><div class="rw"><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" class="rt"/>
-    <circle cx="32" cy="32" r="26" class="rf" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg>
-    <b>${Math.round(val)}</b></div><span>${label}</span><em>of ${max}${unit}</em></div>`;
-};
 
 const V = {};
 
@@ -230,7 +198,6 @@ V.today = () => {
   const prog = r.prog;
   const di = nextDayIdx(prog);
   const day = prog.days[di];
-  const t = targets(), e = eaten();
   const creed = CREED[new Date().getDate() % CREED.length];
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening';
@@ -249,11 +216,6 @@ V.today = () => {
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
     <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
     ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
-  </section>
-
-  <section class="card">
-    <div class="row between"><h3>Fuel</h3><button class="link" data-act="go" data-v="fuel">Log food ${IC.arrow}</button></div>
-    <div class="rings">${ring('kcal', e.kcal, t.kcal, '')}${ring('Protein', e.p, t.p)}${ring('Carbs', e.c, t.c)}${ring('Fat', e.f, t.f)}</div>
   </section>
 
   <section class="card">
@@ -345,41 +307,6 @@ V.session = () => {
     <button class="btn" data-act="finish">Finish & Log</button>
     <button class="btn ghost" data-act="discard">Discard</button>
   </div>`;
-};
-
-V.fuel = () => {
-  const st = S.settings, t = targets(), e = eaten();
-  const list = S.food[today()] || [];
-  return `
-  <header class="top"><h1>Fuel</h1></header>
-  <section class="card">
-    <div class="kicker">Today</div>
-    ${bar('Calories', e.kcal, t.kcal, '')}${bar('Protein', e.p, t.p)}${bar('Carbs', e.c, t.c)}${bar('Fat', e.f, t.f)}
-    ${list.length ? `<ul class="foods">${list.map((x, i) => `<li><span>${esc(x.name)}<em>P${x.p} · C${x.c} · F${x.f} · ${kcalOf(x)} kcal</em></span><button class="x" data-act="delfood" data-i="${i}" aria-label="Remove">×</button></li>`).join('')}</ul>` : '<p class="muted">Nothing logged yet today.</p>'}
-  </section>
-  <section class="card">
-    <div class="kicker">Golden-era staples</div>
-    <div class="chips">${FOODS.map((f, i) => `<button class="chip" data-act="addstaple" data-i="${i}">${esc(f.name)}</button>`).join('')}</div>
-    <form class="custom" data-act="addcustom">
-      <input name="name" placeholder="Custom food" required>
-      <div class="row"><input name="p" inputmode="numeric" placeholder="P g" required><input name="c" inputmode="numeric" placeholder="C g" required><input name="f" inputmode="numeric" placeholder="F g" required></div>
-      <button class="btn ghost">Add</button>
-    </form>
-  </section>
-  <section class="card">
-    <div class="kicker">Your targets</div>
-    <div class="grid2">
-      <label>Bodyweight (${st.unit})<input data-act="setting" data-k="bodyweight" inputmode="decimal" value="${esc(st.bodyweight)}"></label>
-      <label>Activity<select data-act="setting" data-k="activity">
-        ${[[13, 'Light'], [15, 'Moderate'], [17, 'High']].map(([v, n]) => `<option value="${v}" ${+st.activity === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
-    </div>
-    <div class="seg">${GOALS.map((g) => `<button class="${st.goal === g.id ? 'on' : ''}" data-act="setgoal" data-id="${g.id}">${g.name}</button>`).join('')}</div>
-    <p class="big">${t.kcal} kcal · P ${t.p}g · C ${t.c}g · F ${t.f}g</p>
-  </section>
-  <div class="kicker pad">Approach</div>
-  ${DIETS.map((d) => `<button class="card prog${st.diet === d.id ? ' active' : ''}" data-act="setdiet" data-id="${d.id}">
-    <div class="kicker">${esc(d.who)}</div><h3>${esc(d.name)}</h3><p class="muted">${esc(d.desc)}</p></button>`).join('')}
-  <p class="muted small pad">Targets are estimates. Adjust by ~200 kcal if your weight isn't moving in the direction you want after 2–3 weeks.</p>`;
 };
 
 const exRows = (onclick) => {
@@ -708,7 +635,7 @@ function weightCard() {
     ${delta != null ? `<p class="small ${delta <= 0 ? 'hint' : 'muted'}">${delta > 0 ? '+' : ''}${fmtNum(delta)} ${u} over 4 weeks</p>` : ''}
     ${weightChart()}
     <form class="row wform" data-act="logweight"><input name="w" inputmode="decimal" placeholder="Today's weight (${u})" required><button class="btn ghost">Log</button></form>
-    <p class="muted small">Your latest weigh-in also updates your Fuel targets. Ticks under the chart mark injection days.</p>
+    <p class="muted small">Ticks under the chart mark injection days.</p>
   </section>`;
 }
 
@@ -1152,10 +1079,6 @@ document.addEventListener('click', (ev) => {
     case 'finish': finishSession(); break;
     case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
     case 'delsession': ask('Delete this session from your logbook?', 'Delete session', () => { S.sessions = S.sessions.filter((s) => s.id !== d.id); save(); render(); }); break;
-    case 'addstaple': { const f = FOODS[+d.i]; (S.food[today()] ||= []).push({ ...f }); save(); render(); toast(`Added ${f.name}`); break; }
-    case 'delfood': S.food[today()].splice(+d.i, 1); save(); render(); break;
-    case 'setgoal': S.settings.goal = d.id; save(); render(); break;
-    case 'setdiet': S.settings.diet = d.id; save(); render(); break;
     case 'setunit': S.settings.unit = d.u; save(); render(); break;
     case 'export': {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
@@ -1217,12 +1140,6 @@ document.addEventListener('submit', (ev) => {
     if (name) addExercise(name);
     return;
   }
-  if (form.dataset.act !== 'addcustom') return;
-  ev.preventDefault();
-  const fd = new FormData(form);
-  const item = { name: fd.get('name').trim(), p: +fd.get('p') || 0, c: +fd.get('c') || 0, f: +fd.get('f') || 0 };
-  if (!item.name) return;
-  (S.food[today()] ||= []).push(item); save(); render(); toast(`Added ${item.name}`);
 });
 
 if (S.current) view = 'session';

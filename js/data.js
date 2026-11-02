@@ -222,45 +222,6 @@ const PROGRAMS = [
   },
 ];
 
-/* Macro approaches. pct = share of calories from carbs/protein/fat. proteinPerLb overrides protein if set. */
-const DIETS = [
-  { id: 'mentzer', name: 'Mentzer Balanced', who: 'Mike Mentzer',
-    desc: 'About 60% carbs, 25% protein, 15% fat. Mentzer argued that a modest calorie surplus, not extra protein, drives growth.',
-    pct: { c: 0.60, p: 0.25, f: 0.15 } },
-  { id: 'golden', name: 'Venice High-Protein', who: 'Arnold, Franco, Gold’s Gym',
-    desc: 'About 1 g of protein per lb of bodyweight, moderate carbs, and the remaining calories from fat. The classic 70s bulk.',
-    proteinPerLb: 1.0, pct: { c: 0.45, f: 0.25 } },
-  { id: 'gironda', name: 'Gironda Low-Carb', who: 'Vince Gironda',
-    desc: 'High protein and fat, carbs kept low. Eggs, steak and cream. Best suited to getting lean.',
-    proteinPerLb: 1.2, pct: { c: 0.10, f: 0.55 } },
-];
-
-const GOALS = [
-  { id: 'bulk', name: 'Build', kcal: 300 },
-  { id: 'maintain', name: 'Maintain', kcal: 0 },
-  { id: 'cut', name: 'Cut', kcal: -500 },
-];
-
-/* Golden-era staples, macros per listed serving (approximate). */
-const FOODS = [
-  { name: 'Whole eggs (3 large)', p: 19, c: 1, f: 15 },
-  { name: 'Steak, sirloin (8 oz cooked)', p: 62, c: 0, f: 18 },
-  { name: 'Ground beef 85% (6 oz cooked)', p: 42, c: 0, f: 26 },
-  { name: 'Chicken breast (6 oz cooked)', p: 53, c: 0, f: 6 },
-  { name: 'Tuna, canned (1 can)', p: 40, c: 0, f: 2 },
-  { name: 'Cottage cheese (1 cup)', p: 25, c: 8, f: 5 },
-  { name: 'Whole milk (16 oz)', p: 16, c: 24, f: 16 },
-  { name: 'Beef liver (4 oz cooked)', p: 29, c: 6, f: 6 },
-  { name: 'Oatmeal (1 cup cooked)', p: 6, c: 27, f: 3 },
-  { name: 'Baked potato (large)', p: 7, c: 64, f: 0 },
-  { name: 'White rice (1 cup cooked)', p: 4, c: 45, f: 0 },
-  { name: 'Banana', p: 1, c: 27, f: 0 },
-  { name: 'Whole-wheat bread (2 slices)', p: 8, c: 24, f: 2 },
-  { name: 'Peanut butter (2 tbsp)', p: 8, c: 6, f: 16 },
-  { name: 'Protein shake (1 scoop)', p: 25, c: 3, f: 2 },
-  { name: 'Reeves Drink', p: 40, c: 70, f: 2 },
-];
-
 /* ---------- Equipment & exercise library ---------- */
 const EQUIPMENT = [
   ['barbell', 'Barbell & plates'], ['rack', 'Squat rack / power rack'], ['bench', 'Flat & incline bench'],
