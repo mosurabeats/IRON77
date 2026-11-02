@@ -318,3 +318,90 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .slot.done summary em { color: var(--accent); }
 .slot .btn { margin-top: 10px; }
 .nextwk { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+/* =====================================================================
+   VERSION 2 · "26K Glass" — original palette, frosted glass, modern type.
+   Applied when <html> has class "v2"; remove the class to get version 1.
+   ===================================================================== */
+html.v2 {
+  --bg: #1B222A;
+  --card: rgba(231,231,225,.07);
+  --well: rgba(10,14,19,.38);
+  --line: rgba(231,231,225,.09);
+  --label: rgba(195,204,212,.78);
+  --welltext: #C3CCD4;
+  --edge: rgba(231,231,225,.15);
+  --glow: 0 0 14px rgba(57,180,242,.55);
+  --r: 22px;
+  --display: 'Archivo', 'Archivo Black', system-ui, sans-serif;
+  --sans: -apple-system, 'Inter', system-ui, sans-serif;
+}
+html.v2 { background: #1B222A; }
+html.v2 body { background: transparent; font: 15px/1.55 var(--sans); }
+html.v2 body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60vw 45vh at 92% 4%, rgba(57,180,242,.32), transparent 70%),
+    radial-gradient(70vw 55vh at -5% 40%, rgba(51,101,140,.5), transparent 70%),
+    radial-gradient(55vw 40vh at 105% 85%, rgba(232,52,59,.18), transparent 70%),
+    linear-gradient(180deg, #26303A 0%, #1A2129 100%);
+}
+/* type */
+html.v2 h1, html.v2 h2, html.v2 .big, html.v2 .big-num, html.v2 .drawnum, html.v2 .brand b, html.v2 .legend h3 { font-family: var(--display); font-weight: 800; font-stretch: 80%; letter-spacing: -.005em; }
+html.v2 h1 { font-size: 34px; }
+html.v2 h2 { font-size: 26px; }
+html.v2 h3 { font-family: var(--display); font-weight: 700; font-stretch: 88%; font-size: 17px; letter-spacing: .005em; }
+html.v2 .kicker, html.v2 h4, html.v2 .badge, html.v2 .seg button, html.v2 .set.head, html.v2 label, html.v2 .ring span, html.v2 .stats span, html.v2 .bar-l, html.v2 .timer > span:first-child { font-family: var(--mono); }
+html.v2 .creed { font-family: var(--sans); font-style: italic; border-left-color: var(--accent); }
+html.v2 .muted, html.v2 .small { font-family: var(--sans); }
+html.v2 .brand b span { color: var(--accent); }
+/* glass surfaces */
+html.v2 .card, html.v2 .hero, html.v2 .sheet-panel, html.v2 nav, html.v2 .icon, html.v2 .toast, html.v2 .tool {
+  background: var(--card); border: 1px solid var(--edge);
+  -webkit-backdrop-filter: blur(26px) saturate(1.4); backdrop-filter: blur(26px) saturate(1.4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 10px 30px rgba(8,12,16,.25);
+}
+html.v2 .card { border-radius: var(--r); }
+html.v2 .card.hot { box-shadow: inset 0 0 0 1.5px var(--red), 0 10px 30px rgba(8,12,16,.25); }
+html.v2 .prog.active, html.v2 .sugprog.top { box-shadow: inset 0 0 0 1.5px var(--accent), var(--glow); }
+html.v2 .card.list.inset, html.v2 .stats div, html.v2 .phase, html.v2 .hero .phase { background: var(--well); border: 1px solid var(--line); }
+html.v2 .sheet-panel { background: rgba(28,35,43,.82); border-radius: 26px 26px 0 0; border-bottom: 0; }
+html.v2 .sheet-bg { background: rgba(10,14,19,.55); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+html.v2 .icon { border-radius: 14px; }
+html.v2 .toast { background: rgba(231,231,225,.92); color: #1E4F75; border-radius: 16px; }
+/* nav */
+html.v2 nav { border-radius: 26px; padding: 7px; }
+html.v2 nav button { border-radius: 19px; font-family: var(--sans); text-transform: none; letter-spacing: 0; font-size: 11px; font-weight: 600; }
+html.v2 nav button.on { background: rgba(231,231,225,.92); color: #1E4F75; }
+/* buttons & controls */
+html.v2 .btn { border-radius: 999px; font-family: var(--sans); font-weight: 600; text-transform: none; letter-spacing: 0; font-size: 15px; box-shadow: 0 6px 18px rgba(231,231,225,.14); }
+html.v2 .btn:active { transform: scale(.98); box-shadow: none; }
+html.v2 .btn.ghost { background: var(--card); border: 1px solid var(--edge); color: var(--ink); box-shadow: none; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+html.v2 .btn.ghost:active { box-shadow: none; }
+html.v2 .btn.danger-solid { box-shadow: 0 6px 18px rgba(232,52,59,.3); }
+html.v2 input, html.v2 select, html.v2 textarea.summary { background: var(--well); border: 1px solid var(--line); border-radius: 12px; font-family: var(--sans); }
+html.v2 input:focus, html.v2 select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(57,180,242,.18); }
+html.v2 .seg { background: var(--well); border: 1px solid var(--line); border-radius: 14px; }
+html.v2 .seg button { border-radius: 10px; }
+html.v2 .seg button.on { background: rgba(231,231,225,.92); color: #1E4F75; }
+html.v2 .chip, html.v2 .x, html.v2 .chev, html.v2 .sheet-x { background: var(--well); border: 1px solid var(--line); }
+html.v2 .badge { border-radius: 999px; }
+html.v2 .badge.ok, html.v2 .ev-strong { box-shadow: var(--glow); }
+html.v2 .tick { background: var(--well); border: 1px solid var(--line); box-shadow: none; border-radius: 12px; }
+html.v2 .set.done .tick { background: var(--accent); color: #14202A; box-shadow: var(--glow); }
+html.v2 .check input { border-radius: 50%; background: var(--well); border: 1.5px solid rgba(231,231,225,.3); }
+html.v2 .check input:checked { background: var(--accent); border-color: var(--accent); box-shadow: var(--glow); }
+html.v2 .dose-tick { border-radius: 50%; }
+html.v2 .dose-row.done .dose-tick { box-shadow: 0 0 12px var(--k); }
+/* progress, charts, glow */
+html.v2 .bar-t, html.v2 .seg-w::before { background: rgba(231,231,225,.08); }
+html.v2 .bar-f, html.v2 .seg-w i { background: linear-gradient(90deg, var(--steel), var(--accent)); box-shadow: var(--glow); }
+html.v2 .liftchart polyline, html.v2 .wchart polyline { filter: drop-shadow(0 0 5px rgba(57,180,242,.65)); }
+html.v2 .sumline, html.v2 .cycline { color: var(--accent); }
+html.v2 .hero::after { border-top-right-radius: var(--r); }
+html.v2 .demo.dark { background: rgba(10,14,19,.5); border: 1px solid var(--line); }
+html.v2 .timer { border-radius: 999px; box-shadow: 0 10px 30px rgba(232,52,59,.35); }
+html.v2 .exname { text-decoration-color: rgba(231,231,225,.25); }
+html.v2 .exrow, html.v2 .exname, html.v2 .check, html.v2 .chip, html.v2 .link, html.v2 .dose-main, html.v2 .foods li, html.v2 .goalpick button, html.v2 .askq { font-family: var(--sans); }
+html.v2 .link { font-weight: 600; }
+html.v2 .exrow em { font-family: var(--sans); }

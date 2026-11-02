@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '29'; // keep in step with VERSION in sw.js
+const APP_VERSION = '30'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -824,6 +824,11 @@ V.settings = () => `
     <p class="muted small">Vial + water + dose → how many units to draw.</p>
   </button>
   <section class="card">
+    <div class="kicker">Look</div>
+    <div class="seg">${[['v1', 'Version 1 · Classic'], ['v2', 'Version 2 · Glass']].map(([k, n]) => `<button class="${(S.settings.look || 'v2') === k ? 'on' : ''}" data-act="setlook" data-k="${k}">${n}</button>`).join('')}</div>
+    <p class="muted small">Version 2 is the frosted-glass redesign. Switch back to Version 1 any time.</p>
+  </section>
+  <section class="card">
     <div class="row between"><div class="kicker">App version</div><span class="badge">v${APP_VERSION}</span></div>
     <p class="muted small">IRON77 updates itself when you open it with signal. If something looks out of date, force a refresh. Your logs aren't affected.</p>
     <button class="btn ghost" data-act="forceupdate">Check for updates</button>
@@ -1493,6 +1498,7 @@ document.addEventListener('click', (ev) => {
     case 'finish': finishSession(); break;
     case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
     case 'delsession': ask('Delete this session from your logbook?', 'Delete session', () => { S.sessions = S.sessions.filter((s) => s.id !== d.id); save(); render(); }); break;
+    case 'setlook': S.settings.look = d.k; save(); document.documentElement.classList.toggle('v2', d.k !== 'v1'); render(); toast(d.k === 'v1' ? 'Version 1 look restored.' : 'Version 2 look on.'); break;
     case 'setunit': S.settings.unit = d.u; save(); render(); break;
     case 'export': {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
