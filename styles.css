@@ -273,3 +273,15 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .stats b.up { color: var(--accent); }
 .stats b.down { color: #ff9a9e; }
 .exrow .badge.addb { white-space: nowrap; flex: none; background: var(--solid); color: var(--solidtext); }
+
+/* workout summaries & goals */
+.sumline { font-size: 13px; color: var(--accent); margin: -2px 0 6px; }
+.upnext summary small { display: block; font-size: 12px; color: var(--label); margin-top: 2px; }
+.goals summary { align-items: flex-start; }
+.goals h3 { margin: 2px 0 0; }
+.goals[open] summary { margin-bottom: 6px; }
+.goallist { list-style: none; padding: 0; margin: 6px 0 0; }
+.goallist li { padding: 9px 0; border-top: 1px solid var(--line); }
+.goallist li:first-child { border-top: 0; }
+.goallist b { display: block; font-weight: 600; }
+.goallist span { display: block; font-size: 13px; color: var(--label); }

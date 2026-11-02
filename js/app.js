@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '22'; // keep in step with VERSION in sw.js
+const APP_VERSION = '23'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -252,6 +252,63 @@ function startTimer(sec) {
 function stopTimer() { clearInterval(timer); timer = null; const b = $('#timer'); if (b) b.hidden = true; }
 const restFor = (prog) => ({ HIT: 120, Strength: 180, Classic: 90, Volume: 75, Density: 30 }[prog.style] || 90);
 
+/* ---------- workout summaries & goals ---------- */
+const STYLE_FLAVOR = { HIT: 'one all-out set each', Strength: 'heavy sets of 5', Classic: 'full-body basics', Volume: 'high-volume pump work', Density: '8\u00d78, short rests' };
+const STYLE_BRIEF = {
+  HIT: 'Brief, intense, infrequent. Warm up, then take each working set to true failure, where another clean rep is impossible. Lift for about 4 seconds and lower for about 4, with no momentum. Superset pairs (\u21c4) go back to back with no rest. When it\u2019s done, leave: the growth happens in recovery.',
+  Strength: 'Heavy compound work. The first two sets of each lift build up to your working weight; sets 3\u20135 are the real work. Rest 2\u20133 minutes, keep every rep clean, and add weight next time if you make all your reps.',
+  Classic: 'Full-body basics with steady effort. Rest 60\u201390 seconds, keep every rep clean, and add weight once every set hits the target reps.',
+  Volume: 'Golden-era volume. Chase the pump with controlled reps and about 75 seconds\u2019 rest, squeeze every contraction, and pair opposing muscles where marked (\u21c4).',
+  Density: 'Gironda\u2019s 8\u00d78: a moderate weight (about 60% of your 8-rep max) for 8 sets of 8 with only 15\u201330 seconds\u2019 rest. Complete all 64 reps on short rest and you add weight next time.',
+};
+const lowerReps = (reps) => { const m = String(reps).match(/^\s*(\d+)/); return m ? +m[1] : null; };
+const niceList = (a) => (a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' & ' + a[a.length - 1]);
+const capFirst = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+function focusOf(names) {
+  const out = [];
+  for (const n of names) { const t = (EX_TARGET[n] || lib(n)?.[0] || '').replace(' (fly)', ''); if (t && !out.includes(t)) out.push(t); }
+  return out;
+}
+const focusText = (names) => { const f = focusOf(names); return f.length ? capFirst(niceList(f.slice(0, 3)).toLowerCase()) + (f.length > 3 ? ' +' : '') : 'Full workout'; };
+const estMinutes = (prog, sets) => Math.max(10, Math.round((sets * (restFor(prog) + 40)) / 60 / 5) * 5);
+const restText = (prog) => { const r = restFor(prog); return r % 60 ? `${r} sec` : `${r / 60} min`; };
+// One-liner for the Next card and Coming up list.
+function daySummary(prog, day) {
+  const names = day.exercises.map((x) => resolveEx(x.name).name);
+  const sets = day.exercises.reduce((a, x) => a + (+x.sets || 0), 0);
+  return `${focusText(names)} \u00b7 ${names.length} exercise${names.length === 1 ? '' : 's'} \u00b7 ~${estMinutes(prog, sets)} min \u00b7 ${STYLE_FLAVOR[prog.style] || ''}`;
+}
+// What to aim for on each exercise, based on the last time it was logged.
+function goalFor(ex, prog) {
+  const last = lastPerformance(ex.name), top = upperReps(ex.reps), low = lowerReps(ex.reps), u = S.settings.unit, inc = u === 'kg' ? 2.5 : 5;
+  if (!last) return `First time logging it: find a weight you can take to ${ex.reps === 'max' ? 'failure' : ex.reps + ' reps'} with strict form.`;
+  const w = +last.w || 0, r = +last.r || 0;
+  if (!(w > 0)) return `Beat ${r} reps.`;
+  if (top && r >= top) {
+    const nw = prog.style === 'HIT' ? Math.max(w + inc, Math.round((w * 1.05) / inc) * inc) : w + inc;
+    return `You hit ${fmtNum(w)} \u00d7 ${r} last time: go up to ${fmtNum(nw)} ${u} and aim for ${low ?? top}+ reps.`;
+  }
+  return `Beat ${fmtNum(w)} \u00d7 ${r}: aim for ${fmtNum(w)} \u00d7 ${r + 1} or more.`;
+}
+function goalsCard(c, prog) {
+  const names = c.exercises.map((e) => e.name);
+  const sets = c.exercises.reduce((a, e) => a + e.sets.length, 0);
+  const lastSame = [...S.sessions].reverse().find((x) => x.programId === c.programId && x.dayName === c.dayName);
+  const lastProg = [...S.sessions].reverse().find((x) => x.programId === c.programId);
+  const notes = [];
+  if (lastSame) notes.push(`Last time you did ${c.dayName}: ${whenAgo(lastSame.date)}.`);
+  if (lastProg && prog.restDays && daysBetween(lastProg.date, today()) < prog.restDays) { const e = prog.restDays - daysBetween(lastProg.date, today()); notes.push(`You\u2019re training ${e} day${e === 1 ? '' : 's'} earlier than the program suggests. Keep the effort, but watch your recovery.`); }
+  return `<details class="card goals" open>
+    <summary><div><div class="kicker">Today's goals</div><h3>${esc(focusText(names))}</h3></div><span class="chev">+</span></summary>
+    <p class="muted small">${names.length} exercises \u00b7 ${sets} working set${sets === 1 ? '' : 's'} \u00b7 ~${estMinutes(prog, sets)} min \u00b7 rest ${restText(prog)}</p>
+    <p>${esc(STYLE_BRIEF[prog.style] || '')}</p>
+    ${notes.length ? `<p class="hint small">${esc(notes.join(' '))}</p>` : ''}
+    <h4>Targets to beat</h4>
+    <ul class="goallist">${c.exercises.map((e) => `<li><b>${esc(e.name)}</b><span>${esc(goalFor(e, prog))}</span></li>`).join('')}</ul>
+  </details>`;
+}
+const whenAgo = (d) => { const n = daysBetween(d, today()); return n <= 0 ? 'today' : n === 1 ? 'yesterday' : `${n} days ago`; };
+
 /* ---------- views ---------- */
 const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const IC = {
@@ -285,6 +342,7 @@ V.today = () => {
   <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
     <h2>Next: ${esc(day.name)}</h2>
+    <p class="sumline">${esc(daySummary(prog, day))}</p>
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
     <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
     ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
@@ -294,7 +352,7 @@ V.today = () => {
     const u = upcoming(5), rest = u.list.slice(1);
     return `<section class="card">
     <div class="row between"><h3>Coming up</h3><span class="muted small">${u.gap - 1} rest day${u.gap - 1 === 1 ? '' : 's'} between</span></div>
-    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em></span><span class="chev">+</span></summary>
+    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em><small>${esc(daySummary(u.prog, x.day))}</small></span><span class="chev">+</span></summary>
       <ol class="exlist">${x.day.exercises.map((e) => `<li>${exLabel(e)}<b>${e.sets}×${esc(e.reps)}</b></li>`).join('')}</ol>
       ${S.current ? '' : `<button class="link" data-act="start" data-p="${u.prog.id}" data-d="${x.idx}">Do this workout now ${IC.arrow}</button>`}
     </details>`).join('')}
@@ -368,6 +426,7 @@ V.session = () => {
     <div class="row"><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
     <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
     <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
+  ${goalsCard(c, prog)}
   ${c.exercises.map((ex, ei) => {
     const last = lastPerformance(ex.name);
     const top = upperReps(ex.reps);
