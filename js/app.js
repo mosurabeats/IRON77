@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '27'; // keep in step with VERSION in sw.js
+const APP_VERSION = '28'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -300,18 +300,28 @@ function startCycle(progId, goal) {
   if (S.cycle) (S.cycleHistory ||= []).push({ n: S.cycle.n, programId: S.cycle.programId, goal: S.cycle.goal, start: S.cycle.start, end: S.cycle.end || today(), sessions: S.cycle.sessions });
   const n = (S.cycleCount || 0) + 1;
   S.cycleCount = n; S.goal = goal;
-  S.cycle = { n, programId: progId, goal, start: today(), sessions: 0, rot: buildRotation(prog, n), done: false };
-  S.activeProgram = progId; S.nextDay[progId] = 0;
+  // Workouts from this program in the last 3 days (not already in a cycle) count toward week 1,
+  // and the day rotation carries on from where you left off.
+  const recent = S.sessions.filter((x) => x.programId === progId && !x.cycle && daysBetween(x.date, today()) <= 3);
+  recent.forEach((x) => { x.cycle = n; x.week = 1; });
+  S.cycle = { n, programId: progId, goal, start: recent.length ? recent[0].date : today(), sessions: recent.length, rot: buildRotation(prog, n), done: false };
+  S.activeProgram = progId;
+  if (!recent.length) S.nextDay[progId] = 0;
   save(); closeSheet(); go('today');
   const rotated = Object.keys(S.cycle.rot).length;
-  toast(`Cycle ${n} started: ${prog.name}${rotated ? ` with ${rotated} rotated exercise${rotated === 1 ? '' : 's'}` : ''}.`);
+  const counted = recent.length ? ` Counted ${recent.map((x) => `${x.dayName} (${fmtShort(x.date)})`).join(', ')} toward week 1.` : '';
+  toast(`Cycle ${n} started: ${prog.name}${rotated ? ` with ${rotated} rotated exercise${rotated === 1 ? '' : 's'}` : ''}.${counted}`);
 }
 function cycleStartSheet(goal = S.goal || 'size') {
   const sug = suggestPrograms(goal);
   return `<h2>Start a 6-week cycle</h2>
-    <p class="muted small">Each cycle runs Groove → Build → Push → Peak → Deload. A week ends when you finish its sessions, so a missed day doesn't put you behind.</p>
+    <p class="muted small">Each cycle runs Groove → Build → Push → Peak → Deload. A week ends when you finish its sessions, so a missed day doesn't put you behind. Workouts you logged for the chosen program in the last 3 days count toward week 1.</p>
     <h4>Your goal</h4>
     <div class="goalpick">${TRAIN_GOALS.map((g) => `<button class="${g.id === goal ? 'on' : ''}" data-act="cyclegoal" data-g="${g.id}"><b>${esc(g.name)}</b><span>${esc(g.desc)}</span></button>`).join('')}</div>
+    ${(() => { const cur = progById(S.activeProgram); return sug.slice(0, 3).some((x) => x.p.id === cur.id) ? '' : `<h4>Your current program</h4>
+      <div class="card sugprog"><div class="row between"><span class="kicker">${esc(cur.legend)}</span><span class="badge">${CYCLE_PER_WEEK[cur.id] * CYCLE_WEEKS} sessions</span></div>
+      <h3>${esc(cur.name)}</h3><p class="muted small">${esc(PROGRAM_FIT[cur.id].why[goal] || cur.summary)}</p>
+      <button class="btn ghost" data-act="cyclego" data-p="${cur.id}" data-g="${goal}">Start with ${esc(cur.name)}</button></div>`; })()}
     <h4>Suggested program</h4>
     ${sug.slice(0, 3).map((x, i) => `<div class="card sugprog${i === 0 ? ' top' : ''}">
       <div class="row between"><span class="kicker">${i === 0 ? 'Best fit' : 'Also good'} · ${esc(x.p.legend)}</span><span class="badge">${CYCLE_PER_WEEK[x.p.id] * CYCLE_WEEKS} sessions</span></div>
