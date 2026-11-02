@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '24'; // keep in step with VERSION in sw.js
+const APP_VERSION = '25'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -52,6 +52,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
   if (S.current) S.current.exercises.forEach((e) => { e.name = mig(e.name); });
 }
 
+if (S.swaps && Object.keys(S.swaps).length) { S.swaps = {}; save(); } // swaps are now per-workout only
+
 /* ---------- exercises & equipment ---------- */
 const lib = (n) => EXERCISES[n];
 const equipName = (k) => (EQUIPMENT.find(([id]) => id === k) || [k, k])[1];
@@ -59,8 +61,6 @@ const missingFor = (n) => (lib(n) ? lib(n)[1].filter((k) => !S.equipment.include
 const canDo = (n) => missingFor(n).length === 0;
 // What the athlete will actually do for a programmed exercise, given swaps and equipment.
 function resolveEx(name) {
-  const sw = S.swaps[name];
-  if (sw && canDo(sw)) return { name: sw, from: name, why: 'your swap' };
   if (canDo(name)) return { name };
   const alt = ((lib(name) || [])[2] || []).find(canDo);
   return alt ? { name: alt, from: name, why: 'no ' + missingFor(name).map(equipName).join(', ').toLowerCase() } : { name, missing: true };
@@ -491,8 +491,7 @@ V.equipment = () => `
   <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">${IC.back}</button><h1 class="sm">My gym</h1></header>
   <p class="muted pad">Tick what your gym has. When a program calls for equipment you don't have, IRON77 swaps in the closest movement you can do. Tick it again when you move gyms and the original comes back.</p>
   <section class="card">${EQUIPMENT.map(([k, n]) => `<label class="check"><input type="checkbox" data-act="equip" data-k="${k}" ${S.equipment.includes(k) ? 'checked' : ''}><span>${esc(n)}</span></label>`).join('')}</section>
-  ${Object.keys(S.swaps).length ? `<section class="card"><h3>Your swaps</h3>
-    ${Object.entries(S.swaps).map(([a, b]) => `<div class="row between small swaprow"><span>${esc(a)} → <b>${esc(b)}</b></span><button class="link danger" data-act="unswap" data-n="${esc(a)}">Remove</button></div>`).join('')}</section>` : ''}`;
+`;
 
 /* ---------- bottom sheet: exercise demo / add exercise ---------- */
 function openSheet(html) {
@@ -545,7 +544,7 @@ function demoSheet(name, ei) {
     ${alts.length ? `<h4>${cur ? 'Swap for' : 'Alternatives'}</h4><div class="card list inset">
       ${alts.map((a) => `<div class="exrow"><button class="exname" data-act="demo" data-n="${esc(a)}"${cur ? ` data-e="${ei}"` : ''}>${esc(a)}${a === (cur && cur.from) ? ' <em>(original)</em>' : ''}</button>
         ${!canDo(a) ? `<span class="badge">Needs ${esc(missingFor(a).map(equipName).join(', '))}</span>` : cur ? `<button class="link" data-act="swapex" data-e="${ei}" data-to="${esc(a)}">Swap in</button>` : ''}</div>`).join('')}</div>
-      ${cur && !cur.added ? `<p class="muted small">Swaps are remembered: next time, ${esc(original)} will be replaced too. Undo under Train → My gym.</p>` : ''}` : ''}
+      ${cur && !cur.added ? `<p class="muted small">Swaps only apply to today. Next time, ${esc(original)} is back in the plan.</p>` : ''}` : ''}
     ${cur && cur.name !== name && !cur.added ? `<button class="btn" data-act="swapex" data-e="${ei}" data-to="${esc(name)}"${canDo(name) ? '' : ' disabled'}>Swap ${esc(cur.name)} for this</button>` : ''}
     ${cur && cur.name === name ? `<button class="btn ghost danger" data-act="removeex" data-e="${ei}">Remove from this workout</button>` : ''}`;
 }
@@ -621,7 +620,6 @@ function swapExercise(ei, to) {
   const original = ex.from || ex.name;
   ex.name = to;
   ex.from = to === original ? '' : original;
-  if (!ex.added) { if (to === original) delete S.swaps[original]; else S.swaps[original] = to; }
   const last = lastPerformance(to);
   ex.sets.forEach((st) => { if (!st.done) st.w = last ? last.w : ''; });
   save(); closeSheet(); render();
@@ -1285,7 +1283,6 @@ document.addEventListener('click', (ev) => {
     case 'addpick': addExercise(d.n); break;
     case 'swapex': swapExercise(+d.e, d.to); break;
     case 'removeex': ask('Remove this exercise from today\u2019s workout?', 'Remove', () => { S.current.exercises.splice(+d.e, 1); save(); render(); }); break;
-    case 'unswap': delete S.swaps[d.n]; save(); render(); toast('Swap removed.'); break;
     case 'start':
       if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(d.p, +d.d); }); return; }
       startSession(d.p, +d.d); break;
