@@ -260,3 +260,15 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .demo.nodemo img { display: none; }
 .demo.nodemo .demo-off { display: grid; }
 .credit { margin-top: 0; font-size: 11px; text-align: center; }
+
+/* coming up + progress */
+.upnext { border-top: 1px solid var(--line); padding: 10px 0; }
+.upnext:first-of-type { border-top: 0; }
+.upnext summary span:first-child { display: flex; flex-direction: column; }
+.upnext summary em { font-style: normal; font-size: 12px; color: var(--accent); }
+.upnext .exlist { margin-top: 8px; }
+.tool.wide { grid-column: 1 / -1; }
+.liftchart { width: 100%; height: auto; display: block; margin: 10px 0 4px; }
+.card.lift .liftchart { margin-bottom: 0; }
+.stats b.up { color: var(--accent); }
+.stats b.down { color: #ff9a9e; }

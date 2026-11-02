@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '19'; // keep in step with VERSION in sw.js
+const APP_VERSION = '20'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -133,6 +133,78 @@ function recovery() {
 
 const nextDayIdx = (prog) => (S.nextDay[prog.id] || 0) % prog.days.length;
 
+// Next few workouts in the rotation, with estimated dates (train as soon as recovered).
+function upcoming(n = 5) {
+  const r = recovery(), prog = r.prog, gap = (prog.restDays || 0) + 1;
+  let date = r.ready ? today() : dateAdd(today(), r.left);
+  let idx = nextDayIdx(prog);
+  const out = [];
+  for (let k = 0; k < n; k++) {
+    out.push({ idx, day: prog.days[idx], date });
+    idx = (idx + 1) % prog.days.length; date = dateAdd(date, gap);
+  }
+  return { prog, gap, list: out };
+}
+const whenText = (d) => { const n = daysBetween(today(), d); return n <= 0 ? 'Today' : n === 1 ? 'Tomorrow' : fmtDate(d); };
+
+/* ---------- lift progress ---------- */
+const e1rm = (w, r) => (w > 0 && r > 0 ? (r === 1 ? w : w * (1 + r / 30)) : 0); // Epley estimate
+function liftHistory(name) {
+  const byDate = {};
+  for (const s of S.sessions) {
+    const ex = s.exercises.find((e) => e.name === name); if (!ex) continue;
+    for (const st of ex.sets) {
+      const w = +st.w || 0, r = +st.r || 0; if (!r) continue;
+      const v = e1rm(w, r), cur = byDate[s.date];
+      if (!cur || v > cur.v || (v === cur.v && r > cur.r)) byDate[s.date] = { date: s.date, w, r, v };
+    }
+  }
+  const pts = Object.values(byDate).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const weighted = pts.some((p) => p.w > 0);
+  pts.forEach((p) => { p.val = weighted ? Math.round(p.v * 10) / 10 : p.r; });
+  return { pts, weighted, label: weighted ? 'Estimated max' : 'Best reps', unit: weighted ? S.settings.unit : 'reps' };
+}
+const loggedLifts = () => {
+  const last = {};
+  for (const s of S.sessions) for (const e of s.exercises) if (e.sets.some((x) => +x.r > 0)) last[e.name] = s.date > (last[e.name] || '') ? s.date : last[e.name];
+  return Object.keys(last).sort((a, b) => (last[a] < last[b] ? 1 : -1));
+};
+function liftChart(h, small = false) {
+  const pts = h.pts;
+  if (pts.length < 2) return `<p class="muted small">${pts.length ? 'Log this lift again to see a trend.' : 'No sets logged yet.'}</p>`;
+  const W = 320, H = small ? 70 : 140, pad = 10;
+  const t0 = pts[0].date, span = Math.max(1, daysBetween(t0, pts[pts.length - 1].date));
+  const vs = pts.map((p) => p.val), lo = Math.min(...vs), hi = Math.max(...vs), rng = Math.max(1, hi - lo);
+  const x = (p) => pad + (daysBetween(t0, p.date) / span) * (W - 2 * pad);
+  const y = (p) => pad + (1 - (p.val - lo) / rng) * (H - 2 * pad);
+  const best = pts.reduce((a, p) => (p.val >= a.val ? p : a), pts[0]);
+  return `<svg class="liftchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(h.label)} over time">
+    <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" points="${pts.map((p) => `${x(p)},${y(p)}`).join(' ')}"/>
+    ${small ? '' : pts.map((p) => `<circle cx="${x(p)}" cy="${y(p)}" r="3" fill="var(--ink)"/>`).join('')}
+    <circle cx="${x(best)}" cy="${y(best)}" r="${small ? 4 : 6}" fill="var(--red)" stroke="var(--card)" stroke-width="2"/>
+  </svg>
+  ${small ? '' : `<div class="row between small muted"><span>${esc(fmtDate(t0))}</span><span>low ${fmtNum(lo)} · high ${fmtNum(hi)} ${esc(h.unit)}</span></div>`}`;
+}
+const topSet = (p) => (p.w > 0 ? `${fmtNum(p.w)} × ${p.r}` : `${p.r} reps`);
+function liftSheet(name) {
+  const h = liftHistory(name), pts = h.pts;
+  if (!pts.length) return `<h2>${esc(name)}</h2><p class="muted">No sets logged yet.</p>`;
+  const best = pts.reduce((a, p) => (p.val >= a.val ? p : a), pts[0]), last = pts[pts.length - 1], first = pts[0];
+  const chg = first.val ? Math.round(((last.val - first.val) / first.val) * 1000) / 10 : 0;
+  return `<div class="kicker">${esc(h.label)} · ${pts.length} session${pts.length === 1 ? '' : 's'}</div>
+    <h2>${esc(name)}</h2>
+    <div class="stats">
+      <div><span>Best</span><b>${fmtNum(best.val)} ${esc(h.unit)}</b><em>${esc(fmtShort(best.date))}</em></div>
+      <div><span>Last</span><b>${esc(topSet(last))}</b><em>${esc(fmtShort(last.date))}</em></div>
+      <div><span>Change</span><b class="${chg >= 0 ? 'up' : 'down'}">${chg > 0 ? '+' : ''}${chg}%</b><em>since first</em></div>
+    </div>
+    ${liftChart(h)}
+    <p class="muted small">${h.weighted ? 'Estimated max is calculated from your best set each session (weight × reps), so heavier sets and extra reps both count. Red dot marks your best.' : 'Best reps per session. Red dot marks your best.'}</p>
+    <h4>Sessions</h4>
+    <div class="card list inset">${[...pts].reverse().map((p) => `<div class="exrow"><span>${esc(fmtDate(p.date))}</span><span>${esc(topSet(p))}${h.weighted ? `<em> · ${fmtNum(p.val)}</em>` : ''}${p === best ? ' <span class="badge ok">Best</span>' : ''}</span></div>`).join('')}</div>
+    <button class="btn ghost" data-act="demo" data-n="${esc(name)}">How to do it</button>`;
+}
+
 function startSession(progId, dayIdx) {
   const prog = progById(progId);
   const day = prog.days[dayIdx];
@@ -218,6 +290,18 @@ V.today = () => {
     ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
   </section>
 
+  ${(() => {
+    const u = upcoming(5), rest = u.list.slice(1);
+    return `<section class="card">
+    <div class="row between"><h3>Coming up</h3><span class="muted small">${u.gap - 1} rest day${u.gap - 1 === 1 ? '' : 's'} between</span></div>
+    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em></span><span class="chev">+</span></summary>
+      <ol class="exlist">${x.day.exercises.map((e) => `<li>${exLabel(e)}<b>${e.sets}×${esc(e.reps)}</b></li>`).join('')}</ol>
+      ${S.current ? '' : `<button class="link" data-act="start" data-p="${u.prog.id}" data-d="${x.idx}">Do this workout now ${IC.arrow}</button>`}
+    </details>`).join('')}
+    <p class="muted small">Estimated dates, assuming you train as soon as you're recovered.</p>
+  </section>`;
+  })()}
+
   <section class="card">
     <div class="row between"><h3>Today's protocol</h3><button class="link" data-act="go" data-v="stack">Manage ${IC.arrow}</button></div>
     ${S.compounds.length ? protocolToday() : '<p class="muted small">Add your supplements, peptides and medications under Stack → My protocol.</p>'}
@@ -230,6 +314,9 @@ V.train = () => {
   return `
   <header class="top"><h1>Train</h1></header>
   <div class="tools">
+    <button class="card tool wide" data-act="go" data-v="progress">
+      <div class="row between"><h3>Progress</h3>${IC.arrow}</div>
+      <p class="muted small">${loggedLifts().length ? `Charts for ${loggedLifts().length} lift${loggedLifts().length === 1 ? '' : 's'}` : 'Charts appear once you log a workout'}</p></button>
     <button class="card tool${S.equipSet ? '' : ' hot'}" data-act="go" data-v="equipment">
       <h3>My gym</h3><p class="muted small">${S.equipSet ? `${S.equipment.length} of ${EQUIPMENT.length} equipment types` : 'Tell IRON77 what your gym has'}</p></button>
     <button class="card tool" data-act="go" data-v="library">
@@ -317,6 +404,21 @@ const exRows = (onclick) => {
       <span>${esc(n)}</span>${canDo(n) ? '' : `<span class="badge">Needs ${esc(missingFor(n).map(equipName).join(', '))}</span>`}</button>`).join('')}</div>`).join('');
 };
 
+V.progress = () => {
+  const lifts = loggedLifts();
+  return `
+  <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">${IC.back}</button><h1 class="sm">Progress</h1></header>
+  ${lifts.length ? `<p class="muted pad">Tap a lift for its full chart and history.</p>` + lifts.map((n) => {
+    const h = liftHistory(n), last = h.pts[h.pts.length - 1], first = h.pts[0];
+    const chg = h.pts.length > 1 && first.val ? Math.round(((last.val - first.val) / first.val) * 1000) / 10 : null;
+    return `<button class="card lift" data-act="liftchart" data-n="${esc(n)}">
+      <div class="row between"><h3>${esc(n)}</h3>${chg != null ? `<span class="badge ${chg >= 0 ? 'ok' : 'wait'}">${chg > 0 ? '+' : ''}${chg}%</span>` : ''}</div>
+      <p class="muted small">Last: ${esc(topSet(last))} · ${esc(fmtShort(last.date))}${h.weighted ? ` · est. max ${fmtNum(last.val)} ${esc(h.unit)}` : ''}</p>
+      ${liftChart(h, true)}
+    </button>`;
+  }).join('') : '<p class="muted pad">No workouts logged yet. Finish a session and your lifts will show up here.</p>'}`;
+};
+
 V.library = () => `
   <header class="top"><button class="icon" data-act="go" data-v="train" aria-label="Back">${IC.back}</button><h1 class="sm">Exercises</h1></header>
   <input class="search" type="search" placeholder="Search exercises" data-act="exsearch" aria-label="Search exercises">
@@ -369,6 +471,7 @@ function demoSheet(name, ei) {
       <span class="demo-off">Demo unavailable right now. Open it once with signal, or save demos in Settings.</span>
     </div><p class="muted small credit">Animation: ExerciseDB</p>` : ''}
     ${miss.length ? `<p class="warn small">Your gym doesn't have: ${esc(miss.map(equipName).join(', '))}</p>` : ''}
+    ${(() => { const h = liftHistory(name); return h.pts.length ? `<h4>Your progress</h4>${liftChart(h, true)}<button class="link" data-act="liftchart" data-n="${esc(name)}">Full history ${IC.arrow}</button>` : ''; })()}
     ${e ? `<h4>How to do it</h4><ol class="cues">${e[3].map((c) => `<li>${esc(c)}</li>`).join('')}</ol>` : ''}
     <h4>Watch</h4>
     <div class="vids">
@@ -1038,7 +1141,7 @@ document.addEventListener('click', (ev) => {
 /* ---------- render & routing ---------- */
 function render() {
   $('#view').innerHTML = (V[view] || V.today)(viewArg);
-  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === view || (['program', 'library', 'equipment'].includes(view) && b.dataset.v === 'train') || (view === 'session' && b.dataset.v === 'train')));
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === view || (['program', 'library', 'equipment', 'progress'].includes(view) && b.dataset.v === 'train') || (view === 'session' && b.dataset.v === 'train')));
 }
 function go(v, arg = null) { view = v; viewArg = arg; render(); window.scrollTo(0, 0); }
 
@@ -1055,6 +1158,7 @@ document.addEventListener('click', (ev) => {
   switch (d.act) {
     case 'go': if (d.v === 'equipment') { S.equipSet = true; save(); } closeSheet(); go(d.v, d.arg || null); break;
     case 'demo': openSheet(demoSheet(d.n, d.e != null ? +d.e : null)); break;
+    case 'liftchart': openSheet(liftSheet(d.n)); break;
     case 'closesheet': closeSheet(); break;
     case 'addex': openSheet(addSheet()); break;
     case 'addpick': addExercise(d.n); break;
