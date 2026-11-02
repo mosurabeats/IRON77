@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '30'; // keep in step with VERSION in sw.js
+const APP_VERSION = '31'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -1517,7 +1517,19 @@ document.addEventListener('change', (ev) => {
   } else if (d.act === 'setting') {
     const v = parseFloat(el.value); if (!isNaN(v) && v > 0) { S.settings[d.k] = v; save(); render(); }
   } else if (d.act === 'setval') {
-    S.current.exercises[+d.e].sets[+d.s][d.k] = el.value.trim(); save();
+    // Fill the sets below with the same value: only ones not yet ticked off that are empty
+    // or still match what this set held before (so values you typed differently are kept).
+    const sets = S.current.exercises[+d.e].sets, si = +d.s, k = d.k;
+    const prev = sets[si][k], val = el.value.trim();
+    sets[si][k] = val;
+    for (let j = si + 1; j < sets.length; j++) {
+      const st = sets[j];
+      if (st.done || !(st[k] === '' || st[k] === prev)) continue;
+      st[k] = val;
+      const inp = document.querySelector(`input[data-act="setval"][data-e="${d.e}"][data-s="${j}"][data-k="${k}"]`);
+      if (inp) inp.value = val;
+    }
+    save();
   } else if (d.act === 'import') {
     const file = el.files[0]; if (!file) return;
     file.text().then((txt) => {
