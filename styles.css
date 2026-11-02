@@ -312,3 +312,4 @@ textarea.summary { width: 100%; min-height: 260px; background: var(--well); colo
 .more { margin-top: 10px; }
 .more summary { color: var(--accent); font-size: 13px; padding: 6px 0; }
 .hero .cycline { margin-top: 6px; padding-right: 60px; }
+.stats b small { font-size: 11px; color: var(--label); font-weight: 400; }

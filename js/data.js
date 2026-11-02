@@ -670,3 +670,20 @@ const PHASES = {
 };
 /* Lifts that define their programs and never rotate. */
 const CORE_LIFTS = new Set(['Squat', 'Deadlift', 'Bench Press', 'Overhead Press']);
+/* Hand-picked variations for cycle rotation: same job, similar loading (not equipment fallbacks). */
+const ROTATE = {
+  'Pec Deck': ['DB Flyes', 'Cable Crossover'], 'DB Flyes': ['Cable Crossover', 'Pec Deck'], 'Cable Crossover': ['DB Flyes', 'Pec Deck'],
+  'Incline Press': ['Incline DB Press'], 'Wide-Grip Bench Press': ['DB Bench Press'],
+  'Nautilus Pullover': ['Straight-Arm Pulldown', 'DB Pullover'], 'DB Pullover': ['Straight-Arm Pulldown'],
+  'Close-Grip Palms-Up Pulldown': ['Chin-Up'], 'Chin-Up': ['Close-Grip Palms-Up Pulldown'],
+  'Wide-Grip Chin-Up': ['Wide-Grip Pulldown'], 'Wide-Grip Pulldown': ['Wide-Grip Chin-Up'],
+  'Barbell Row': ['One-Arm DB Row'],
+  'Leg Press': ['Hack Squat'], 'Hack Squat': ['Leg Press'], 'Front Squat': ['Hack Squat'], 'Leg Extension': ['Sissy Squat'],
+  'Stiff-Leg Deadlift': ['DB Romanian Deadlift'],
+  'Behind-the-Neck Press': ['Seated DB Press'], 'Seated DB Press': ['Behind-the-Neck Press'],
+  'DB Lateral Raise': ['Cable Lateral Raise'], 'Cable Lateral Raise': ['DB Lateral Raise'],
+  'Bent-Over Lateral Raise': ['Reverse Pec Deck'], 'Reverse Pec Deck': ['Bent-Over Lateral Raise'],
+  'Barbell Curl': ['DB Curl'], 'Incline DB Curl': ['Concentration Curl'], 'Preacher Curl': ['Concentration Curl'],
+  'Triceps Pressdown': ['Lying Triceps Extension', 'Overhead DB Extension'], 'Lying Triceps Extension': ['Overhead DB Extension'],
+  'Hanging Leg Raise': ['Lying Leg Raise'], 'Bent-Knee Sit-Up': ['Lying Leg Raise'], 'Wrist Curl': ['DB Wrist Curl'],
+};

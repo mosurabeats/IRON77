@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '26'; // keep in step with VERSION in sw.js
+const APP_VERSION = '27'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -278,8 +278,7 @@ function buildRotation(prog, n) {
   const names = [...new Set(prog.days.flatMap((d) => d.exercises.map((x) => x.name)))];
   names.forEach((name, i) => {
     if (CORE_LIFTS.has(name) || (i + n) % 2) return;
-    const t = EX_TARGET[name];
-    const alts = (lib(name)?.[2] || []).filter((a) => EX_TARGET[a] === t && canDo(a) && !names.includes(a));
+    const alts = (ROTATE[name] || []).filter((a) => canDo(a) && !names.includes(a) && !CORE_LIFTS.has(a));
     if (alts.length) rot[name] = alts[(n - 2) % alts.length];
   });
   return rot;
@@ -328,6 +327,7 @@ function cycleReviewSheet() {
     const h = liftHistory(n), before = h.pts.filter((p) => p.date < cy.start), during = h.pts.filter((p) => p.date >= cy.start);
     if (!during.length) return null;
     const best = during.reduce((a, p) => (p.val >= a.val ? p : a)), base = before.length ? before.reduce((a, p) => (p.val >= a.val ? p : a)) : during[0];
+    // base = best before the cycle, or the first session of the cycle for lifts that are new
     return { n, h, best, base, pct: base.val ? Math.round(((best.val - base.val) / base.val) * 1000) / 10 : 0, pr: !before.length || best.val > base.val };
   }).filter(Boolean).sort((a, b) => b.pct - a.pct);
   const prs = gains.filter((g) => g.pr && g.pct > 0);
@@ -335,7 +335,7 @@ function cycleReviewSheet() {
     <h2>Six weeks done</h2>
     <div class="stats">
       <div><span>Sessions</span><b>${inCycle.length}</b><em>${esc(fmtShort(cy.start))} \u2013 ${esc(fmtShort(cy.end || today()))}</em></div>
-      <div><span>Records</span><b>${prs.length}</b><em>lifts improved</em></div>
+      <div><span>Improved</span><b>${gains.filter((g) => g.pct > 0).length}<small>/${gains.length}</small></b><em>lifts</em></div>
       <div><span>Top gain</span><b class="up">${gains[0] && gains[0].pct > 0 ? '+' + gains[0].pct + '%' : '\u2014'}</b><em>${gains[0] && gains[0].pct > 0 ? esc(gains[0].n) : ''}</em></div>
     </div>
     ${gains.length ? `<h4>Your lifts this cycle</h4><div class="card list inset">${gains.slice(0, 8).map((g) => `<button class="exrow" data-act="liftchart" data-n="${esc(g.n)}"><span>${esc(g.n)}<em> · best ${esc(topSet(g.best))}</em></span><span class="badge ${g.pct > 0 ? 'ok' : ''}">${g.pct > 0 ? '+' : ''}${g.pct}%</span></button>`).join('')}</div>` : ''}
@@ -351,7 +351,8 @@ function cycleCard(where) {
   const cy = S.cycle;
   if (!cy) return `<section class="card cyclecta"><div class="kicker">6-week cycles</div><h3>Train in cycles that evolve</h3>
     <p class="muted small">Pick a goal and IRON77 suggests a program, then runs it as six progressive weeks with a deload, a review and rotated exercises each new cycle.</p>
-    <button class="btn" data-act="cyclestart">Start a cycle</button></section>`;
+    <button class="btn" data-act="cyclestart">Start a cycle</button>
+    ${where === 'today' ? '<button class="link" data-act="cyclelater">Not now</button>' : ''}</section>`;
   if (cy.done) return `<section class="card hot"><div class="kicker">Cycle ${cy.n} complete</div><h3>Review your six weeks</h3>
     <p class="muted small">See what improved and start cycle ${cy.n + 1}.</p><button class="btn" data-act="cyclereview">Review & plan next cycle</button></section>`;
   const i = cycleInfo(cy), prog = progById(cy.programId);
@@ -459,7 +460,7 @@ V.today = () => {
   <header class="top"><div><div class="brand"><svg class="mark" viewBox="0 0 300 242" aria-hidden="true"><rect x="0" y="0" width="300" height="50" rx="8" fill="#33658C"/><rect x="32" y="64" width="236" height="50" rx="8" fill="#39B4F2"/><rect x="64" y="128" width="172" height="50" rx="8" fill="#E7E7E1"/><rect x="96" y="192" width="108" height="50" rx="8" fill="#E8343B"/></svg><b>IRON<span>77</span></b></div><h1>${greet}</h1><div class="muted">${esc(fmtDate(today()))}</div></div>
     <button class="icon" data-act="go" data-v="settings" aria-label="Settings">${IC.gear}</button></header>
   <p class="creed">“${esc(creed)}”</p>
-  ${!S.cycle || S.cycle.done || S.cycle.programId !== S.activeProgram ? cycleCard('today') : ''}
+  ${(!S.cycle && !S.cycleLater) || (S.cycle && (S.cycle.done || S.cycle.programId !== S.activeProgram)) ? cycleCard('today') : ''}
 
   ${S.current ? `<section class="card hot"><div class="kicker">In progress</div><h2>${esc(S.current.dayName)}</h2>
     <button class="btn" data-act="go" data-v="session">Resume Workout</button>
@@ -1411,6 +1412,7 @@ document.addEventListener('click', (ev) => {
       if (S.cycle && !S.cycle.done) { ask(`End cycle ${S.cycle.n} early and start a new one?`, 'Start new cycle', () => { S.cycle.end = today(); startCycle(d.p, d.g); }); break; }
       startCycle(d.p, d.g); break;
     case 'cyclereview': openSheet(cycleReviewSheet()); break;
+    case 'cyclelater': S.cycleLater = true; save(); render(); toast('You can start a cycle any time from Train.'); break;
     case 'cycleend': ask(`End cycle ${S.cycle.n} now? You'll go to its review.`, 'End cycle', () => { S.cycle.done = true; S.cycle.end = today(); save(); render(); openSheet(cycleReviewSheet()); }); break;
     case 'closesheet': closeSheet(); break;
     case 'addex': openSheet(addSheet()); break;
@@ -1420,7 +1422,12 @@ document.addEventListener('click', (ev) => {
     case 'start':
       if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(d.p, +d.d); }); return; }
       startSession(d.p, +d.d); break;
-    case 'activate': S.activeProgram = d.id; save(); toast('Program activated.'); render(); break;
+    case 'activate':
+      if (S.cycle && !S.cycle.done && S.cycle.programId !== d.id) {
+        ask(`Start a new 6-week cycle with ${progById(d.id).name}? Cycle ${S.cycle.n} ends here.`, 'Start new cycle', () => { S.cycle.end = today(); startCycle(d.id, S.cycle.goal); });
+        break;
+      }
+      S.activeProgram = d.id; save(); toast('Program activated.'); render(); break;
     case 'addset': {
       const ex = S.current.exercises[+d.e]; const lastSet = ex.sets[ex.sets.length - 1];
       ex.sets.push({ w: lastSet ? lastSet.w : '', r: '', done: false }); save(); render(); break;
