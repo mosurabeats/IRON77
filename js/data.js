@@ -699,3 +699,100 @@ const WARMUP_MOVES = {
   Legs: [['Leg swings, front to back \u2022 left', 20], ['Leg swings, front to back \u2022 right', 20], ['Hip circles', 20], ['Bodyweight squats', 30], ['Ankle rocks', 20]],
   Abs: [['Cat\u2013cow', 30], ['Dead bug', 30]],
 };
+
+/* ---------- Cable machine exercises ---------- */
+Object.assign(EXERCISES, {
+  'Seated Cable Row': ['Back', ['cable'], ['Barbell Row', 'One-Arm DB Row'],
+    ['Sit tall, knees soft, chest up.', 'Pull the handle to your lower ribs, squeezing your shoulder blades together.', 'Let the weight pull your shoulders forward into a full stretch, without rounding your lower back.'], ''],
+  'Single-Arm Cable Row': ['Back', ['cable'], ['One-Arm DB Row', 'Seated Cable Row'],
+    ['One handle, braced against the bench or your knee.', 'Row toward your hip, elbow close to your side.', 'Reach forward into a full lat stretch on the way back.'], ''],
+  'Neutral-Grip Pulldown': ['Back', ['cable'], ['Close-Grip Palms-Up Pulldown', 'Chin-Up'],
+    ['V-bar or neutral handles, thighs under the pad.', 'Pull to your upper chest, elbows driving down to your sides.', 'Slow return to a full stretch overhead.'], ''],
+  'Cable Shrug': ['Back', ['cable'], [],
+    ['Low pulley, straight bar, arms straight.', 'Shrug your shoulders straight up toward your ears.', 'Hold a second at the top, then lower all the way.'], ''],
+  'Low-to-High Cable Fly': ['Chest', ['cable'], ['Incline DB Press', 'Cable Crossover'],
+    ['Pulleys set low, slight forward lean.', 'Sweep your hands up and together to about chin height.', 'Squeeze the upper chest, then lower slowly.'], ''],
+  'Face Pull': ['Shoulders', ['cable'], ['Cable Rear Delt Fly', 'Bent-Over Lateral Raise'],
+    ['Rope at upper-chest to face height.', 'Pull toward your face, elbows high and wide, hands finishing beside your ears.', 'Squeeze the rear delts and upper back, then return slowly.'], ''],
+  'Cable Rear Delt Fly': ['Shoulders', ['cable'], ['Reverse Pec Deck', 'Bent-Over Lateral Raise'],
+    ['Cross the cables: left hand holds the right cable, and vice versa.', 'Sweep your arms out wide at shoulder height.', 'Lead with the elbows and squeeze the rear delts.'], ''],
+  'Cable Front Raise': ['Shoulders', ['cable'], ['DB Lateral Raise'],
+    ['Low pulley behind you, handle or bar in front of your thighs.', 'Raise straight up to shoulder height with a slight elbow bend.', 'Lower slowly against the cable.'], ''],
+  'Cable Upright Row': ['Shoulders', ['cable'], ['Cable Lateral Raise', 'DB Lateral Raise'],
+    ['Low pulley, straight bar, hands about shoulder-width.', 'Pull up along your body, elbows leading, to mid-chest.', 'Stop before your shoulders pinch; lower under control.'], ''],
+  'Cable Curl': ['Arms', ['cable'], ['Barbell Curl', 'DB Curl'],
+    ['Low pulley, straight or EZ bar, elbows pinned.', 'Curl to full contraction; the cable keeps tension at the top.', 'Lower slowly to a full stretch.'], 'Arnold cable curl'],
+  'Cable Hammer Curl': ['Arms', ['cable'], ['DB Curl', 'Cable Curl'],
+    ['Low pulley with a rope, palms facing each other.', 'Curl up, keeping your elbows at your sides.', 'Squeeze, then lower slowly.'], ''],
+  'Rope Pushdown': ['Arms', ['cable'], ['Triceps Pressdown', 'Overhead DB Extension'],
+    ['High pulley with a rope, elbows pinned to your sides.', 'Push down and spread the rope apart at the bottom.', 'Return until your forearms are just past parallel.'], ''],
+  'Overhead Cable Extension': ['Arms', ['cable'], ['Overhead DB Extension', 'Lying Triceps Extension'],
+    ['Face away from the pulley, rope behind your head, elbows up.', 'Extend your arms forward and up to lockout.', 'Return slowly for a deep triceps stretch.'], ''],
+  'Cable Triceps Kickback': ['Arms', ['cable'], ['Rope Pushdown', 'Overhead DB Extension'],
+    ['Hinge forward, upper arm parallel to the floor.', 'Extend the elbow straight back to lockout.', 'Keep the upper arm still; lower slowly.'], ''],
+  'Cable Pull-Through': ['Legs', ['cable'], ['Stiff-Leg Deadlift', 'DB Romanian Deadlift'],
+    ['Face away from a low pulley, rope between your legs.', 'Hinge back at the hips with a flat back.', 'Drive your hips forward and squeeze your glutes to stand.'], ''],
+  'Cable Glute Kickback': ['Legs', ['cable'], ['Cable Pull-Through'],
+    ['Ankle strap on a low pulley, hold the frame for balance.', 'Kick the leg straight back, squeezing the glute.', 'Control it back to the start. All reps, then switch legs.'], ''],
+  'Cable Crunch': ['Abs', ['cable'], ['Bent-Knee Sit-Up', 'Hanging Leg Raise'],
+    ['Kneel facing a high pulley, rope beside your head.', 'Crunch your ribs toward your hips, rounding your spine.', 'Keep your hips still; return slowly.'], ''],
+  'Cable Woodchop': ['Abs', ['cable'], ['Cable Crunch'],
+    ['Stand side-on to the pulley, arms long.', 'Rotate through your torso, pulling the handle across your body.', 'Control it back. All reps, then switch sides.'], ''],
+});
+/* Cable options as alternatives for existing exercises (equipment swaps, Swap for). */
+[['Barbell Row', 'Seated Cable Row'], ['One-Arm DB Row', 'Single-Arm Cable Row'], ['Close-Grip Palms-Up Pulldown', 'Neutral-Grip Pulldown'],
+ ['Barbell Curl', 'Cable Curl'], ['DB Curl', 'Cable Curl'], ['Incline DB Curl', 'Cable Curl'], ['Triceps Pressdown', 'Rope Pushdown'],
+ ['Lying Triceps Extension', 'Overhead Cable Extension'], ['Overhead DB Extension', 'Overhead Cable Extension'],
+ ['Bent-Over Lateral Raise', 'Cable Rear Delt Fly'], ['Reverse Pec Deck', 'Face Pull'], ['DB Lateral Raise', 'Cable Upright Row'],
+ ['Incline DB Press', 'Low-to-High Cable Fly'], ['Stiff-Leg Deadlift', 'Cable Pull-Through'], ['DB Romanian Deadlift', 'Cable Pull-Through'],
+ ['Bent-Knee Sit-Up', 'Cable Crunch'], ['Hanging Leg Raise', 'Cable Crunch'], ['Lying Leg Raise', 'Cable Crunch']]
+  .forEach(([n, a]) => { if (!EXERCISES[n][2].includes(a)) EXERCISES[n][2].push(a); });
+/* What the new cable exercises mainly target (used for suggestions). */
+const EXTRA_TARGETS = {
+  'Seated Cable Row': 'Upper back', 'Single-Arm Cable Row': 'Upper back', 'Neutral-Grip Pulldown': 'Lats', 'Cable Shrug': 'Traps',
+  'Low-to-High Cable Fly': 'Upper chest', 'Face Pull': 'Rear delts', 'Cable Rear Delt Fly': 'Rear delts', 'Cable Front Raise': 'Front delts',
+  'Cable Upright Row': 'Side delts', 'Cable Curl': 'Biceps', 'Cable Hammer Curl': 'Biceps', 'Rope Pushdown': 'Triceps',
+  'Overhead Cable Extension': 'Triceps', 'Cable Triceps Kickback': 'Triceps', 'Cable Pull-Through': 'Hamstrings', 'Cable Glute Kickback': 'Glutes',
+  'Cable Crunch': 'Abs', 'Cable Woodchop': 'Abs',
+};
+/* Cable variations join cycle rotation. */
+Object.assign(ROTATE, {
+  'Seated Cable Row': ['Barbell Row', 'Single-Arm Cable Row'], 'Single-Arm Cable Row': ['One-Arm DB Row'],
+  'One-Arm DB Row': ['Single-Arm Cable Row'], 'Neutral-Grip Pulldown': ['Close-Grip Palms-Up Pulldown'],
+  'Cable Curl': ['Barbell Curl', 'Cable Hammer Curl'], 'DB Curl': ['Cable Curl'], 'Cable Hammer Curl': ['Cable Curl'],
+  'Rope Pushdown': ['Triceps Pressdown', 'Overhead Cable Extension'], 'Overhead Cable Extension': ['Overhead DB Extension', 'Rope Pushdown'],
+  'Overhead DB Extension': ['Overhead Cable Extension'], 'Face Pull': ['Cable Rear Delt Fly'], 'Cable Rear Delt Fly': ['Face Pull', 'Bent-Over Lateral Raise'],
+  'Low-to-High Cable Fly': ['Cable Crossover'], 'Cable Crunch': ['Hanging Leg Raise'],
+});
+ROTATE['Barbell Row'] = ['One-Arm DB Row', 'Seated Cable Row'];
+ROTATE['Barbell Curl'] = ['DB Curl', 'Cable Curl'];
+ROTATE['Triceps Pressdown'] = ['Rope Pushdown', 'Lying Triceps Extension', 'Overhead DB Extension'];
+ROTATE['Close-Grip Palms-Up Pulldown'] = ['Chin-Up', 'Neutral-Grip Pulldown'];
+ROTATE['Bent-Over Lateral Raise'] = ['Reverse Pec Deck', 'Cable Rear Delt Fly'];
+ROTATE['Hanging Leg Raise'] = ['Lying Leg Raise', 'Cable Crunch'];
+Object.assign(EX_DEMO, {
+  "Seated Cable Row": "fUBheHs",
+  "Single-Arm Cable Row": "vpp9Ku2",
+  "Face Pull": "wqNPGCg",
+  "Cable Rear Delt Fly": "aqvSOQE",
+  "Cable Front Raise": "u2X71Np",
+  "Cable Upright Row": "cALKspW",
+  "Cable Curl": "G08RZcQ",
+  "Cable Hammer Curl": "HPlPoQA",
+  "Rope Pushdown": "dU605di",
+  "Overhead Cable Extension": "2IxROQ1",
+  "Low-to-High Cable Fly": "FVmZVhk",
+  "Cable Crunch": "WW95auq",
+  "Cable Pull-Through": "OM46QHm",
+  "Cable Woodchop": "aVs3BR3",
+  "Cable Shrug": "Eg98Ft9",
+  "Neutral-Grip Pulldown": "4c9BhzB",
+  "Cable Triceps Kickback": "vvNjDJS",
+  "Cable Glute Kickback": "Kpajagk",
+});
+/* Cable variations first in these pairs so they rotate in from the next cycle. */
+Object.assign(ROTATE, {
+  'Barbell Row': ['Seated Cable Row', 'One-Arm DB Row'], 'Barbell Curl': ['Cable Curl', 'DB Curl'], 'Incline DB Curl': ['Cable Curl', 'Concentration Curl'],
+  'Lying Triceps Extension': ['Overhead Cable Extension', 'Overhead DB Extension'], 'Hanging Leg Raise': ['Cable Crunch', 'Lying Leg Raise'],
+  'Bent-Knee Sit-Up': ['Cable Crunch', 'Lying Leg Raise'], 'Stiff-Leg Deadlift': ['DB Romanian Deadlift', 'Cable Pull-Through'],
+});

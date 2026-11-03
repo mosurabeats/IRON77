@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '37'; // keep in step with VERSION in sw.js
+const APP_VERSION = '38'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -322,7 +322,12 @@ function buildRotation(prog, n) {
   names.forEach((name, i) => {
     if (CORE_LIFTS.has(name) || (i + n) % 2) return;
     const alts = (ROTATE[name] || []).filter((a) => canDo(a) && !names.includes(a) && !CORE_LIFTS.has(a));
-    if (alts.length) rot[name] = alts[(n - 2) % alts.length];
+    if (!alts.length) return;
+    // take this cycle's pick, or the next variation not already used by another rotation
+    for (let k = 0; k < alts.length; k++) {
+      const a = alts[(Math.floor((n - 2) / 2) + k) % alts.length]; // each exercise rotates every other cycle, stepping through its variations
+      if (!Object.values(rot).includes(a)) { rot[name] = a; break; }
+    }
   });
   return rot;
 }
@@ -736,7 +741,7 @@ const exRows = (onclick) => {
   const groups = {};
   for (const [n, e] of Object.entries(EXERCISES)) (groups[e[0]] ||= []).push(n);
   return Object.entries(groups).map(([g, names]) => `<div class="kicker pad">${esc(g)}</div><div class="card list">
-    ${names.map((n) => `<button class="exrow" data-act="${onclick}" data-n="${esc(n)}" data-search="${esc((n + ' ' + g).toLowerCase())}">
+    ${names.map((n) => `<button class="exrow" data-act="${onclick}" data-n="${esc(n)}" data-search="${esc((n + ' ' + g + ' ' + (lib(n)?.[1] || []).map(equipName).join(' ')).toLowerCase())}">
       <span>${esc(n)}</span>${canDo(n) ? '' : `<span class="badge">Needs ${esc(missingFor(n).map(equipName).join(', '))}</span>`}</button>`).join('')}</div>`).join('');
 };
 
@@ -831,6 +836,7 @@ const EX_TARGET = {
   'Triceps Pressdown': 'Triceps', 'Lying Triceps Extension': 'Triceps', 'Close-Grip Bench Press': 'Triceps', 'Overhead DB Extension': 'Triceps', 'Bench Dips': 'Triceps',
   'Wrist Curl': 'Forearms', 'DB Wrist Curl': 'Forearms', 'Bent-Knee Sit-Up': 'Abs', 'Hanging Leg Raise': 'Abs', 'Lying Leg Raise': 'Abs',
 };
+Object.assign(EX_TARGET, EXTRA_TARGETS);
 const STYLE_ADD = { HIT: [1, '6-10'], Strength: [3, '5'], Classic: [3, '10'], Volume: [4, '8-12'], Density: [8, '8'] };
 const STYLE_TIP = {
   HIT: 'Heavy Duty: one more all-out set at most. Brief beats long.',
