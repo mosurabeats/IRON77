@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '38'; // keep in step with VERSION in sw.js
+const APP_VERSION = '39'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local

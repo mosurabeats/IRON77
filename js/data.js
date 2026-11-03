@@ -796,3 +796,32 @@ Object.assign(ROTATE, {
   'Lying Triceps Extension': ['Overhead Cable Extension', 'Overhead DB Extension'], 'Hanging Leg Raise': ['Cable Crunch', 'Lying Leg Raise'],
   'Bent-Knee Sit-Up': ['Cable Crunch', 'Lying Leg Raise'], 'Stiff-Leg Deadlift': ['DB Romanian Deadlift', 'Cable Pull-Through'],
 });
+
+/* ---------- Unilateral (single-arm) triceps ---------- */
+Object.assign(EXERCISES, {
+  'Single-Arm Cable Pushdown': ['Arms', ['cable'], ['Rope Pushdown', 'Single-Arm DB Kickback'],
+    ['High pulley with a single handle, elbow pinned to your side.', 'Push down to full lockout and squeeze; try an underhand grip for variety.', 'Return slowly until the forearm is just past parallel. All reps, then switch arms.'], ''],
+  'Single-Arm Cable Extension': ['Arms', ['cable'], ['Single-Arm Cable Pushdown', 'Overhead Cable Extension'],
+    ['Stand beside a high pulley, handle in the far hand.', 'Extend the arm down and across your body, keeping the upper arm still.', 'Control the return for a full stretch. All reps, then switch arms.'], ''],
+  'Single-Arm Overhead DB Extension': ['Arms', ['dumbbell', 'bench'], ['Overhead DB Extension', 'Overhead Cable Extension'],
+    ['Sit tall, one dumbbell overhead, elbow pointing up.', 'Lower it behind your head, keeping the elbow close to your head.', 'Extend to lockout. Use your free hand to steady the elbow. Then switch arms.'], ''],
+  'Single-Arm DB Kickback': ['Arms', ['dumbbell', 'bench'], ['Cable Triceps Kickback', 'Single-Arm Cable Pushdown'],
+    ['Knee and hand on a bench, upper arm parallel to the floor.', 'Extend the elbow straight back to lockout and squeeze.', 'Keep the upper arm still; lower slowly. All reps, then switch arms.'], ''],
+  'Single-Arm Lying DB Extension': ['Arms', ['dumbbell', 'bench'], ['Lying Triceps Extension', 'Single-Arm Overhead DB Extension'],
+    ['Lie on a bench, one dumbbell held straight up.', 'Lower it across your face toward the opposite shoulder, bending only at the elbow.', 'Extend back up. All reps, then switch arms.'], ''],
+});
+Object.assign(EX_DEMO, { 'Single-Arm Cable Pushdown': 'qRZ5S1N', 'Single-Arm Cable Extension': 'sYCcnon', 'Single-Arm Overhead DB Extension': 'nAuHPcD', 'Single-Arm DB Kickback': 'W6PxUkg', 'Single-Arm Lying DB Extension': 'wyaqzOS' });
+Object.assign(EXTRA_TARGETS, { 'Single-Arm Cable Pushdown': 'Triceps', 'Single-Arm Cable Extension': 'Triceps', 'Single-Arm Overhead DB Extension': 'Triceps', 'Single-Arm DB Kickback': 'Triceps', 'Single-Arm Lying DB Extension': 'Triceps' });
+[['Triceps Pressdown', 'Single-Arm Cable Pushdown'], ['Rope Pushdown', 'Single-Arm Cable Pushdown'], ['Overhead DB Extension', 'Single-Arm Overhead DB Extension'],
+ ['Overhead Cable Extension', 'Single-Arm Cable Extension'], ['Lying Triceps Extension', 'Single-Arm Lying DB Extension'], ['Cable Triceps Kickback', 'Single-Arm DB Kickback'],
+ ['Bench Dips', 'Single-Arm DB Kickback']]
+  .forEach(([n, a]) => { if (!EXERCISES[n][2].includes(a)) EXERCISES[n][2].push(a); });
+Object.assign(ROTATE, {
+  'Triceps Pressdown': ['Rope Pushdown', 'Single-Arm Cable Pushdown', 'Lying Triceps Extension'],
+  'Rope Pushdown': ['Triceps Pressdown', 'Single-Arm Cable Pushdown', 'Overhead Cable Extension'],
+  'Overhead DB Extension': ['Single-Arm Overhead DB Extension', 'Overhead Cable Extension'],
+  'Lying Triceps Extension': ['Overhead Cable Extension', 'Single-Arm Lying DB Extension', 'Overhead DB Extension'],
+  'Single-Arm Cable Pushdown': ['Single-Arm DB Kickback', 'Rope Pushdown'], 'Single-Arm DB Kickback': ['Single-Arm Cable Pushdown'],
+  'Single-Arm Overhead DB Extension': ['Overhead DB Extension'], 'Single-Arm Lying DB Extension': ['Lying Triceps Extension'],
+  'Single-Arm Cable Extension': ['Single-Arm Cable Pushdown'],
+});
