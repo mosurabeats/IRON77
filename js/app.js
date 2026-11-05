@@ -3,7 +3,19 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '40'; // keep in step with VERSION in sw.js
+const APP_VERSION = '41'; // keep in step with VERSION in sw.js
+// Developer diagnostics: keep the last 30 errors on this device for the debug report.
+const ERRKEY = 'iron77.errors';
+function logError(msg, where = '', stack = '') {
+  try {
+    let where0 = ''; try { where0 = view; } catch {}
+    const log = JSON.parse(localStorage.getItem(ERRKEY) || '[]');
+    log.push({ t: new Date().toISOString(), v: APP_VERSION, view: where0, msg: String(msg).slice(0, 300), where, stack: String(stack || '').split('\n').slice(0, 4).join(' | ').slice(0, 500) });
+    localStorage.setItem(ERRKEY, JSON.stringify(log.slice(-30)));
+  } catch {}
+}
+window.addEventListener('error', (e) => logError(e.message, `${(e.filename || '').split('/').pop()}:${e.lineno}:${e.colno}`, e.error?.stack));
+window.addEventListener('unhandledrejection', (e) => logError(e.reason?.message || e.reason, 'promise', e.reason?.stack));
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -968,7 +980,42 @@ V.settings = () => `
       <label class="btn ghost file">Import backup<input type="file" accept="application/json" data-act="import" hidden></label>
       <button class="btn ghost danger" data-act="reset">Erase all data</button>
     </div>
+  </section>
+  <section class="card">
+    <div class="row between"><div class="kicker">Report to developer</div><span class="badge">${errCount()} error${errCount() === 1 ? '' : 's'} logged</span></div>
+    <p class="muted small">Builds a debug report: app version, device, recent errors and your app data. Send it or paste it into the chat with Claude. Nothing is sent automatically.</p>
+    <button class="btn ghost" data-act="devreport">Create debug report</button>
   </section>`;
+
+/* ---------- developer debug report ---------- */
+const errCount = () => { try { return JSON.parse(localStorage.getItem(ERRKEY) || '[]').length; } catch { return 0; } };
+function devReport(note = '', withStack = true) {
+  let errors = []; try { errors = JSON.parse(localStorage.getItem(ERRKEY) || '[]'); } catch {}
+  const data = structuredClone(S);
+  if (!withStack) { data.compounds = `[${(S.compounds || []).length} left out]`; data.doses = `[${(S.doses || []).length} left out]`; }
+  const sw = navigator.serviceWorker?.controller ? 'active' : 'none';
+  const head = [
+    'IRON77 DEBUG REPORT',
+    `App v${APP_VERSION} · ${new Date().toString()}`,
+    `Device: ${navigator.userAgent}`,
+    `Screen ${screen.width}×${screen.height} @${devicePixelRatio}x · viewport ${innerWidth}×${innerHeight} · ${matchMedia('(display-mode: standalone)').matches ? 'home-screen app' : 'browser'} · service worker ${sw} · ${navigator.onLine ? 'online' : 'offline'}`,
+    `Look ${S.settings.look || 'v2'} · program ${S.activeProgram || '-'} · ${S.sessions.length} sessions · cycle ${S.cycle ? `${S.cycle.n} (${S.cycle.programId}, ${S.cycle.sessions} done)` : 'none'} · workout in progress: ${S.current ? 'yes' : 'no'}`,
+    note ? `\nWhat happened:\n${note}` : '',
+    `\nRecent errors (${errors.length}):`,
+    ...(errors.length ? errors.map((e) => `- ${e.t} v${e.v} [${e.view}] ${e.msg} @ ${e.where}${e.stack ? `\n    ${e.stack}` : ''}`) : ['- none']),
+    '\nApp data:',
+  ].filter((x) => x !== '').join('\n');
+  return `${head}\n${JSON.stringify(data)}`;
+}
+function devReportSheet() {
+  openSheet(`<h2>Debug report</h2>
+    <p class="muted small">Describe what went wrong (optional), then share or copy the report and paste it into the chat.</p>
+    <label class="devnote">What happened?<textarea class="summary" id="devnote" rows="3" placeholder="e.g. Tapped Finish on Legs B and nothing happened"></textarea></label>
+    <label class="check"><input type="checkbox" id="devstack" checked><span>Include Stack (compounds & doses)</span></label>
+    <div class="stack-btns">${navigator.share ? '<button class="btn" data-act="devshare">Share report</button>' : ''}<button class="btn ghost" data-act="devcopy">Copy report</button>
+      <button class="btn ghost danger" data-act="devclear">Clear error log</button></div>`);
+}
+const devReportNow = () => devReport($('#devnote')?.value.trim() || '', $('#devstack')?.checked !== false);
 
 /* ---------- protocol: compounds, doses, bodyweight ---------- */
 const ROUTES = ['SubQ', 'IM', 'Oral', 'Topical', 'Other'];
@@ -1661,6 +1708,11 @@ document.addEventListener('click', (ev) => {
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `iron77-backup-${today()}.json`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000); break;
     }
+    case 'devreport': devReportSheet(); break;
+    case 'devshare': { const txt = devReportNow(); const file = new File([txt], `iron77-debug-${today()}.txt`, { type: 'text/plain' });
+      (navigator.canShare?.({ files: [file] }) ? navigator.share({ files: [file], title: 'IRON77 debug report' }) : navigator.share({ title: 'IRON77 debug report', text: txt })).catch(() => {}); break; }
+    case 'devcopy': navigator.clipboard?.writeText(devReportNow()).then(() => toast('Report copied. Paste it into the chat.'), () => toast('Couldn\u2019t copy. Try Share instead.')); break;
+    case 'devclear': ask('Clear the error log?', 'Clear log', () => { try { localStorage.removeItem(ERRKEY); } catch {} closeSheet(); render(); toast('Error log cleared.'); }); break;
     case 'reset': ask('Erase ALL workouts, protocol, food and settings? This can\u2019t be undone.', 'Erase everything', () => { S = structuredClone(DEFAULT); save(); go('today'); }); break;
   }
 });
