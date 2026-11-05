@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '39'; // keep in step with VERSION in sw.js
+const APP_VERSION = '40'; // keep in step with VERSION in sw.js
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
@@ -134,6 +134,25 @@ function recovery() {
 
 const nextDayIdx = (prog) => (S.nextDay[prog.id] || 0) % prog.days.length;
 
+/* A/B sessions: programs that repeat a day within a week alternate between two versions of it.
+   Arnold's split has hand-written B days; others swap non-core lifts for a variation. */
+const hasVariants = (prog) => prog.style !== 'Strength' && (CYCLE_PER_WEEK[prog.id] || 0) > prog.days.length;
+function dayVariant(prog, dayIdx, v = 0) {
+  const day = prog.days[dayIdx];
+  if (!hasVariants(prog)) return { ...day, base: day.name, v: 0 };
+  if (!v) return { ...day, name: day.name + ' A', base: day.name, v: 0 };
+  const own = DAY_B[prog.id + '|' + day.name];
+  const ex = own || day.exercises.map((x) => {
+    if (CORE_LIFTS.has(x.name)) return x;
+    const alt = (ROTATE[x.name] || []).find((a) => canDo(a) && !day.exercises.some((y) => y.name === a));
+    return alt ? { ...x, name: alt, note: '' } : x;
+  });
+  return { ...day, name: day.name + ' B', base: day.name, v: 1, exercises: ex };
+}
+const dayNotes = (pid, dv) => DAY_NOTES[pid + '|' + dv.name] || DAY_NOTES[pid + '|' + (dv.base || dv.name)];
+// Outside a cycle, alternate A/B by how many times the program has been run.
+const freeVariant = (prog, k = 0) => (hasVariants(prog) ? Math.floor((S.sessions.filter((x) => x.programId === prog.id).length + k) / prog.days.length) % 2 : 0);
+
 // Next few workouts in the rotation, with estimated dates (train as soon as recovered).
 function upcoming(n = 5) {
   const r = recovery(), prog = r.prog, gap = (prog.restDays || 0) + 1;
@@ -141,7 +160,7 @@ function upcoming(n = 5) {
   let idx = nextDayIdx(prog);
   const out = [];
   for (let k = 0; k < n; k++) {
-    out.push({ idx, day: prog.days[idx], date });
+    out.push({ idx, v: freeVariant(prog, k), day: dayVariant(prog, idx, freeVariant(prog, k)), date });
     idx = (idx + 1) % prog.days.length; date = dateAdd(date, gap);
   }
   return { prog, gap, list: out };
@@ -206,12 +225,12 @@ function liftSheet(name) {
     <button class="btn ghost" data-act="demo" data-n="${esc(name)}">How to do it</button>`;
 }
 
-function startSession(progId, dayIdx, slot = null) {
+function startSession(progId, dayIdx, slot = null, v = 0) {
   wuStop();
   const prog = progById(progId);
-  const day = prog.days[dayIdx];
+  const day = dayVariant(prog, dayIdx, v);
   S.current = {
-    id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name, slot,
+    id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name, dayBase: day.base, slot,
     exercises: day.exercises.map((ex) => {
       const res = resolveEx(ex.name, prog.id);
       const last = lastPerformance(res.name);
@@ -296,9 +315,12 @@ const cycleWeek = (cy) => cycleInfo(cy).wk;
 // The workouts that make up a cycle week (the program's days in order, continuing across weeks).
 function weekSlots(cy, wk) {
   const prog = progById(cy.programId), per = CYCLE_PER_WEEK[cy.programId] || 3, done = (cy.slots || {})[wk] || [];
+  const seen = {};
   return Array.from({ length: per }, (_, i) => {
     const dayIdx = ((wk - 1) * per + i) % prog.days.length;
-    return { i, dayIdx, day: prog.days[dayIdx], done: done.includes(i) };
+    seen[dayIdx] = (seen[dayIdx] ?? -1) + 1;
+    const day = dayVariant(prog, dayIdx, seen[dayIdx] % 2);
+    return { i, dayIdx, v: day.v, day, done: done.includes(i) };
   });
 }
 function markSlot(cy, wk, dayName, slotIdx) {
@@ -532,7 +554,7 @@ function goalsCard(c, prog) {
     ${(() => { const eq = [...new Set(names.flatMap((n) => lib(n)?.[1] || []))].map(equipName); return `<div class="eqchips">${(eq.length ? eq : ['Bodyweight']).map((x) => `<span>${esc(x)}</span>`).join('')}</div>`; })()}
     ${notes.length ? `<p class="hint small">${esc(notes.join(' '))}</p>` : ''}
     ${(() => { const ph = phaseFor(prog); return ph && c.programId === S.cycle.programId ? `<h4>This week \u00b7 Week ${ph.wk} of 6 \u00b7 ${esc(ph.phase)}</h4><p>${esc(ph.text)}</p>` : ''; })()}
-    ${(() => { const dn = DAY_NOTES[c.programId + '|' + c.dayName]; return dn
+    ${(() => { const dn = DAY_NOTES[c.programId + '|' + c.dayName] || DAY_NOTES[c.programId + '|' + (c.dayBase || c.dayName)]; return dn
       ? `<h4>Logistics</h4><p>${esc(dn.logistics)}</p><h4>Philosophy</h4><p>${esc(dn.philosophy)}</p>`
       : `<h4>Approach</h4><p>${esc(STYLE_BRIEF[prog.style] || '')}</p>`; })()}
     <h4>Targets to beat</h4>
@@ -556,8 +578,6 @@ const V = {};
 function weekCard(prog, ph, r) {
   const cy = S.cycle, slots = weekSlots(cy, ph.wk), doneN = slots.filter((x) => x.done).length;
   const nextWk = ph.wk < CYCLE_WEEKS ? ph.wk + 1 : null;
-  const dup = {}; slots.forEach((sl) => { dup[sl.day.name] = (dup[sl.day.name] || 0) + 1; });
-  const seen = {};
   return `<section class="card hero week">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
     <div class="kicker cycline">Cycle ${ph.n} · Week ${ph.wk} of 6 · ${ph.phase}</div>
@@ -565,14 +585,13 @@ function weekCard(prog, ph, r) {
     <p class="phase"><b>${esc(ph.phase)}:</b> ${esc(ph.text)}</p>
     <p class="muted small">${doneN} of ${slots.length} done · pick any workout, in any order.${prog.restDays ? ` ${esc(r.msg)}` : ''}</p>
     ${slots.map((sl) => {
-      seen[sl.day.name] = (seen[sl.day.name] || 0) + 1;
-      const label = sl.day.name + (dup[sl.day.name] > 1 ? ` ${seen[sl.day.name] === 1 ? 'A' : 'B'}` : '');
-      const dn = DAY_NOTES[prog.id + '|' + sl.day.name];
+      const label = sl.day.name;
+      const dn = dayNotes(prog.id, sl.day);
       return `<details class="upnext slot${sl.done ? ' done' : ''}"><summary><span><b>${sl.done ? '\u2713 ' : ''}${esc(label)}</b>${sl.done ? '<em>Done</em>' : ''}${dn && !sl.done ? `<span class="brief">${esc(dn.brief)}</span>` : ''}<small>${esc(daySummary(prog, sl.day))}</small></span><span class="chev">+</span></summary>
         <ol class="exlist">${sl.day.exercises.map((x) => `<li>${exLabel(x, '', prog.id)}<b>${adjSets(x.sets, ph.setsMod)}×${esc(x.reps)}</b></li>`).join('')}</ol>
         ${sl.done
           ? `<button class="link muted" data-act="slotundo" data-i="${sl.i}">Undo, mark as not done</button>`
-          : `${S.current ? '' : `<button class="btn" data-act="startslot" data-i="${sl.i}" data-d="${sl.dayIdx}">Start ${esc(label)}</button>`}
+          : `${S.current ? '' : `<button class="btn" data-act="startslot" data-i="${sl.i}" data-d="${sl.dayIdx}" data-v="${sl.v}">Start ${esc(label)}</button>`}
              <p class="muted small slotalt">Already did it? Start it, set the date to the day you trained and log your sets, or <button class="link" data-act="slotdone" data-i="${sl.i}" data-n="${esc(sl.day.name)}">just mark it done</button>.</p>`}
       </details>`;
     }).join('')}
@@ -584,7 +603,7 @@ V.today = () => {
   const r = recovery();
   const prog = r.prog;
   const di = nextDayIdx(prog);
-  const day = prog.days[di];
+  const dv = freeVariant(prog), day = dayVariant(prog, di, dv);
   const ph = phaseFor(prog);
   const creed = CREED[new Date().getDate() % CREED.length];
   const hr = new Date().getHours();
@@ -603,21 +622,21 @@ V.today = () => {
   <section class="card hero">
     <div class="row between"><div class="kicker">${esc(prog.name)}</div><span class="badge ${r.ready ? 'ok' : 'wait'}">${r.ready ? 'READY' : 'RECOVERING'}</span></div>
     <h2>Next: ${esc(day.name)}</h2>
-    ${DAY_NOTES[prog.id + '|' + day.name] ? `<p class="brief">${esc(DAY_NOTES[prog.id + '|' + day.name].brief)}</p>` : ''}
+    ${dayNotes(prog.id, day) ? `<p class="brief">${esc(dayNotes(prog.id, day).brief)}</p>` : ''}
     <p class="sumline">${esc(daySummary(prog, day))}</p>
     ${ph ? `<p class="phase"><b>This week \u00b7 ${esc(ph.phase)}:</b> ${esc(ph.text)}</p>` : ''}
     <p class="muted">${esc(r.msg)}${r.stalled ? ' Your last session didn’t beat the logbook on most lifts, so one extra rest day has been added, as Mentzer prescribed.' : ''}</p>
     <ol class="exlist">${day.exercises.map((x) => `<li>${exLabel(x, '', prog.id)}<b>${(ph ? adjSets(x.sets, ph.setsMod) : x.sets)}×${esc(x.reps)}</b></li>`).join('')}</ol>
-    ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
+    ${S.current ? '' : `<button class="btn" data-act="start" data-p="${prog.id}" data-d="${di}" data-v="${dv}">${r.ready ? 'Start Workout' : 'Train Anyway'}</button>`}
   </section>
 
   ${(() => {
     const u = upcoming(5), rest = u.list.slice(1);
     return `<section class="card">
     <div class="row between"><h3>Coming up</h3><span class="muted small">${u.gap - 1} rest day${u.gap - 1 === 1 ? '' : 's'} between</span></div>
-    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em>${DAY_NOTES[u.prog.id + '|' + x.day.name] ? `<span class="brief">${esc(DAY_NOTES[u.prog.id + '|' + x.day.name].brief)}</span>` : ''}<small>${esc(daySummary(u.prog, x.day))}</small></span><span class="chev">+</span></summary>
+    ${rest.map((x) => `<details class="upnext"><summary><span><b>${esc(x.day.name)}</b><em>${esc(whenText(x.date))}</em>${dayNotes(u.prog.id, x.day) ? `<span class="brief">${esc(dayNotes(u.prog.id, x.day).brief)}</span>` : ''}<small>${esc(daySummary(u.prog, x.day))}</small></span><span class="chev">+</span></summary>
       <ol class="exlist">${x.day.exercises.map((e) => `<li>${exLabel(e, '', u.prog.id)}<b>${e.sets}×${esc(e.reps)}</b></li>`).join('')}</ol>
-      ${S.current ? '' : `<button class="link" data-act="start" data-p="${u.prog.id}" data-d="${x.idx}">Do this workout now ${IC.arrow}</button>`}
+      ${S.current ? '' : `<button class="link" data-act="start" data-p="${u.prog.id}" data-d="${x.idx}" data-v="${x.v}">Do this workout now ${IC.arrow}</button>`}
     </details>`).join('')}
     <p class="muted small">Estimated dates, assuming you train as soon as you're recovered.</p>
   </section>`;
@@ -673,8 +692,8 @@ V.program = (id) => {
     <ul class="rules">${p.principles.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
     ${isActive ? '<span class="badge ok">ACTIVE PROGRAM</span>' : `<button class="btn" data-act="activate" data-id="${p.id}">Make Active Program</button>`}
   </section>
-  ${p.days.map((d, i) => `<section class="card">
-    <div class="row between"><h3>${esc(d.name)}</h3><button class="link" data-act="start" data-p="${p.id}" data-d="${i}">Start ${IC.arrow}</button></div>
+  ${p.days.flatMap((_, i) => (hasVariants(p) ? [0, 1] : [0]).map((v) => [i, v, dayVariant(p, i, v)])).map(([i, v, d]) => `<section class="card">
+    <div class="row between"><h3>${esc(d.name)}</h3><button class="link" data-act="start" data-p="${p.id}" data-d="${i}" data-v="${v}">Start ${IC.arrow}</button></div>
     <ol class="exlist">${d.exercises.map((x) => `<li>${exLabel(x, x.note ? `<em>${esc(x.note)}</em>` : '', p.id)}<b>${x.sets}×${esc(x.reps)}</b></li>`).join('')}</ol>
     <p class="muted small">Tap an exercise for form cues and demos.</p>
   </section>`).join('')}`;
@@ -1583,8 +1602,8 @@ document.addEventListener('click', (ev) => {
       break;
     }
     case 'startslot':
-      if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }); }); break; }
-      startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }); break;
+      if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }, +d.v || 0); }); break; }
+      startSession(S.cycle.programId, +d.d, { wk: cycleWeek(S.cycle), i: +d.i }, +d.v || 0); break;
     case 'cyclelater': S.cycleLater = true; save(); render(); toast('You can start a cycle any time from Train.'); break;
     case 'cycleend': ask(`End cycle ${S.cycle.n} now? You'll go to its review.`, 'End cycle', () => { S.cycle.done = true; S.cycle.end = today(); save(); render(); openSheet(cycleReviewSheet()); }); break;
     case 'closesheet': closeSheet(); break;
@@ -1593,8 +1612,8 @@ document.addEventListener('click', (ev) => {
     case 'swapex': swapExercise(+d.e, d.to); break;
     case 'removeex': ask('Remove this exercise from today\u2019s workout?', 'Remove', () => { S.current.exercises.splice(+d.e, 1); save(); render(); }); break;
     case 'start':
-      if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(d.p, +d.d); }); return; }
-      startSession(d.p, +d.d); break;
+      if (S.current) { ask('A workout is already in progress. Discard it and start this one?', 'Discard & start', () => { stopTimer(); startSession(d.p, +d.d, null, +d.v || 0); }); return; }
+      startSession(d.p, +d.d, null, +d.v || 0); break;
     case 'activate':
       if (S.cycle && !S.cycle.done && S.cycle.programId !== d.id) {
         ask(`Start a new 6-week cycle with ${progById(d.id).name}? Cycle ${S.cycle.n} ends here.`, 'Start new cycle', () => { S.cycle.end = today(); startCycle(d.id, S.cycle.goal); });

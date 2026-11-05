@@ -825,3 +825,51 @@ Object.assign(ROTATE, {
   'Single-Arm Overhead DB Extension': ['Overhead DB Extension'], 'Single-Arm Lying DB Extension': ['Lying Triceps Extension'],
   'Single-Arm Cable Extension': ['Single-Arm Cable Pushdown'],
 });
+
+/* ---------- Second ("B") sessions for programs that repeat a day within a week ----------
+   Arnold trained each body part twice a week with different angles and tools. */
+const DAY_B = {
+  'arnold-split|Chest & Back': [
+    { name: 'Incline DB Press', sets: 5, reps: '6-10' },
+    { name: 'Dips', sets: 4, reps: '8-12' },
+    { name: 'Cable Crossover', sets: 4, reps: '10-12' },
+    { name: 'Wide-Grip Pulldown', sets: 5, reps: '8-10' },
+    { name: 'Seated Cable Row', sets: 5, reps: '8-10' },
+    { name: 'Straight-Arm Pulldown', sets: 3, reps: '12-15' },
+  ],
+  'arnold-split|Shoulders & Arms': [
+    { name: 'Seated DB Press', sets: 5, reps: '8-10', note: 'Arnold press: rotate palms from facing you to facing forward' },
+    { name: 'Cable Lateral Raise', sets: 4, reps: '10-12' },
+    { name: 'Bent-Over Lateral Raise', sets: 4, reps: '10-12' },
+    { name: 'Preacher Curl', sets: 4, reps: '8-10', ss: true },
+    { name: 'Overhead Cable Extension', sets: 4, reps: '10-12' },
+    { name: 'Concentration Curl', sets: 3, reps: '10-12', ss: true },
+    { name: 'Single-Arm DB Kickback', sets: 3, reps: '10-12' },
+    { name: 'DB Wrist Curl', sets: 3, reps: '12-15' },
+  ],
+  'arnold-split|Legs': [
+    { name: 'Front Squat', sets: 5, reps: '8-10' },
+    { name: 'Leg Press', sets: 4, reps: '12-15' },
+    { name: 'Leg Curl', sets: 5, reps: '10-12' },
+    { name: 'DB Romanian Deadlift', sets: 4, reps: '10' },
+    { name: 'Single-Leg DB Calf Raise', sets: 6, reps: '12-15' },
+    { name: 'Cable Crunch', sets: 4, reps: '12-15' },
+  ],
+};
+Object.assign(DAY_NOTES, {
+  'arnold-split|Chest & Back B': {
+    brief: 'Second chest and back day: new angles and the cables. Incline dumbbells, dips and crossovers, then pulldowns, cable rows and straight-arm work.',
+    logistics: 'About 60 minutes. Pair a push with a pull again (incline DB press with pulldowns, dips with cable rows) and keep rests around a minute. Dumbbells and cables let you go deeper and squeeze harder than the barbell day, so use slightly lighter weights and chase the stretch and contraction.',
+    philosophy: 'Arnold hit each muscle twice a week and rarely the same way twice. The A day builds with heavy barbells; the B day shapes and pumps from different angles, so the muscle never fully adapts. Variety in angle, not just more sets, is what fills out a physique.',
+  },
+  'arnold-split|Shoulders & Arms B': {
+    brief: 'Arnold presses, cable and rear-delt work, then preacher and concentration curls paired with overhead and single-arm triceps.',
+    logistics: 'About 60 minutes. Start with the Arnold press, rotating your palms as you press. Superset the arm work as marked: preacher curls with overhead cable extensions, concentration curls with single-arm kickbacks. Rest about a minute between rounds and finish with wrist curls.',
+    philosophy: 'The A day loads the arms heavy; the B day isolates for peak and detail. Arnold used concentration curls and one-arm work to build the biceps peak, and believed every angle had to be trained to build complete arms.',
+  },
+  'arnold-split|Legs B': {
+    brief: 'Front squats, high-rep leg press, leg curls and Romanian deadlifts, then single-leg calves and cable crunches.',
+    logistics: 'About 60–70 minutes. Front squat first while you’re fresh, then go for a burn on the high-rep leg press. Hamstrings get two movements. Do calves one leg at a time with a full stretch and a hard squeeze, and finish with cable crunches.',
+    philosophy: 'Heavy back squats on the A day build the base; the B day changes the angle and the rep range to bring up the quad sweep, hamstrings and calves. Arnold attacked his calves relentlessly until they matched the rest of him.',
+  },
+});
