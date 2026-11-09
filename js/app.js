@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '42'; // keep in step with VERSION in sw.js
+const APP_VERSION = '43'; // keep in step with VERSION in sw.js
 // Developer diagnostics: keep the last 30 errors on this device for the debug report.
 const ERRKEY = 'iron77.errors';
 function logError(msg, where = '', stack = '') {
@@ -451,7 +451,7 @@ function guidedView(c, prog) {
         <p class="small gnext"><span class="muted">Then:</span> ${nxt}</p>
       </div>`}
     ${chips}
-    <div class="row warmlinks"><button class="link" data-act="addset" data-e="${st.ei}">+ Add set</button><button class="link" data-act="addwarm" data-e="${st.ei}">+ Warm-up</button></div>
+    <div class="row warmlinks gedit"><button class="link" data-act="addset" data-e="${st.ei}">+ Add set</button><button class="link" data-act="addwarm" data-e="${st.ei}">+ Warm-up</button><button class="link muted" data-act="gdel" data-e="${st.ei}" data-k="${st.k}" data-i="${st.i}">\u2212 Remove ${st.k === 'warm' ? `warm-up ${st.i + 1}` : `set ${st.i + 1}`}</button></div>
   </section>`}
   <div class="kicker pad">Workout</div>
   <section class="card list glist">${c.exercises.map((e, i) => { const t = e.sets.length, d = e.sets.filter((x) => x.done).length;
@@ -1967,6 +1967,16 @@ document.addEventListener('click', (ev) => {
       save(); render(); break;
     }
     case 'delwarm': S.current.exercises[+d.e].warm.pop(); save(); render(); break;
+    case 'gdel': {
+      const c = S.current, ex = c.exercises[+d.e], list = ex[d.k], i = +d.i, warm = d.k === 'warm';
+      if (!warm && list.length <= 1) { toast('An exercise needs at least one set. Use the exercise\u2019s \u24d8 panel to remove the exercise.'); break; }
+      const st = list[i];
+      ask(`Remove ${warm ? `warm-up ${i + 1}` : `set ${i + 1}`} of ${ex.name}${st && st.r ? ` (${st.w || 0} \u00d7 ${st.r})` : ''}?`, warm ? 'Remove warm-up' : 'Remove set', () => {
+        list.splice(i, 1);
+        c.focus = null; save(); render();
+      });
+      break;
+    }
     case 'warmdone': { const st = S.current.exercises[+d.e].warm[+d.s]; st.done = !st.done; save(); render(); break; }
     case 'delset': {
       const ex = S.current.exercises[+d.e];
