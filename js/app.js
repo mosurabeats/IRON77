@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '41'; // keep in step with VERSION in sw.js
+const APP_VERSION = '42'; // keep in step with VERSION in sw.js
 // Developer diagnostics: keep the last 30 errors on this device for the debug report.
 const ERRKEY = 'iron77.errors';
 function logError(msg, where = '', stack = '') {
@@ -245,14 +245,15 @@ function startSession(progId, dayIdx, slot = null, v = 0) {
     id: uid(), date: today(), programId: prog.id, dayIdx, dayName: day.name, dayBase: day.base, slot,
     exercises: day.exercises.map((ex) => {
       const res = resolveEx(ex.name, prog.id);
-      const last = lastPerformance(res.name);
       const ph = phaseFor(prog), n = ph ? adjSets(ex.sets, ph.setsMod) : ex.sets;
+      const fr = freshSets(res.name, n, ex.reps, prog);
       return {
         name: res.name, from: res.from || '', target: `${n} × ${ex.reps}`, reps: ex.reps, ss: !!ex.ss, note: ex.note || '',
-        sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', eff: workEffort(prog), done: false })),
+        sets: fr.sets, sug: fr.sug,
         warm: lastWarmups(res.name),
       };
     }),
+    started: Date.now(), mode: S.settings.sessionMode || 'guided',
   };
   save(); go('session');
 }
@@ -284,7 +285,8 @@ function finishSession() {
   c.exercises = c.exercises.filter((e) => e.sets.length || e.warm.length);
   if (c.exercises.length) {
     const cy = S.cycle && !S.cycle.done && S.cycle.programId === c.programId ? S.cycle : null;
-    S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, exercises: c.exercises.map(({ name, sets, warm }) => ({ name, sets, ...(warm.length ? { warm } : {}) })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
+    const mins = c.started && c.date === today() ? Math.round((Date.now() - c.started) / 60000) : 0;
+    S.sessions.push({ id: c.id, date: c.date, programId: c.programId, dayName: c.dayName, ...(mins >= 1 && mins <= 300 ? { mins } : {}), exercises: c.exercises.map(({ name, sets, warm }) => ({ name, sets, ...(warm.length ? { warm } : {}) })), ...(cy ? { cycle: cy.n, week: cycleWeek(cy) } : {}) });
     S.sessions.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0)); // back-dated logs slot into place
     const prog = progById(c.programId);
     S.nextDay[c.programId] = (c.dayIdx + 1) % prog.days.length;
@@ -294,27 +296,299 @@ function finishSession() {
       if (cy.sessions >= cycleInfo(cy).total) { cy.done = true; cy.end = today(); }
     }
   }
-  S.current = null; save(); stopTimer(); go('today');
+  S.current = null; save(); stopTimer();
+  if (c.exercises.length) go('recap', c.id); else go('today');
   if (S.cycle?.done && S.cycle.end === today() && c.exercises.length) toast('Cycle complete! Your review is on Today.');
-  else if (c.exercises.length) toast('Session logged. Now go rest and grow.');
 }
 
 /* ---------- rest timer ---------- */
-let timer = null;
+let timer = null, timerEnd = 0;
+function timerTick() {
+  const left = Math.max(0, Math.round((timerEnd - Date.now()) / 1000));
+  const txt = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  document.querySelectorAll('#timer .t, .grest .t').forEach((el) => { el.textContent = txt; });
+  document.querySelectorAll('.gclock').forEach((el) => { el.textContent = elapsed(+el.dataset.t); });
+  if (left <= 0) {
+    stopTimer(); navigator.vibrate?.([200, 100, 200]); toast('Rest over. Next set.');
+    if (view === 'session' && isGuided()) render();
+  }
+}
 function startTimer(sec) {
   stopTimer();
-  const end = Date.now() + sec * 1000;
-  const bar = $('#timer');
-  bar.hidden = false;
-  const tick = () => {
-    const left = Math.max(0, Math.round((end - Date.now()) / 1000));
-    bar.querySelector('.t').textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
-    if (left <= 0) { stopTimer(); navigator.vibrate?.([200, 100, 200]); toast('Rest over. Next set.'); }
-  };
-  tick(); timer = setInterval(tick, 250);
+  timerEnd = Date.now() + sec * 1000;
+  $('#timer').hidden = false;
+  timerTick(); timer = setInterval(timerTick, 250);
 }
 function stopTimer() { clearInterval(timer); timer = null; const b = $('#timer'); if (b) b.hidden = true; }
 const restFor = (prog) => ({ HIT: 120, Strength: 180, Classic: 90, Volume: 75, Density: 30 }[prog.style] || 90);
+
+/* ---------- suggested weights (Ladder-style targets) ---------- */
+const incU = () => (S.settings.unit === 'kg' ? 2.5 : 5);
+function suggestFor(name, reps, prog) {
+  const last = lastPerformance(name);
+  if (!last || !(+last.w > 0)) return null;
+  const w = +last.w, r = +last.r || 0, inc = incU(), rnd = (v) => Math.round(v / inc) * inc, top = upperReps(reps), ph = phaseFor(prog);
+  if (ph && ph.wk === 1) return { w: rnd(w * 0.9), dir: 'down', why: `Groove week: 90% of your last ${fmtNum(w)}` };
+  if (ph && ph.wk === 6) return { w: rnd(w * (prog.style === 'Strength' ? 0.8 : 0.7)), dir: 'down', why: 'Deload week: lighter, easy reps' };
+  if (top && r >= top) return { w: prog.style === 'HIT' ? Math.max(w + inc, rnd(w * 1.05)) : w + inc, dir: 'up', why: `Up from ${fmtNum(w)}: you hit ${r} reps last time` };
+  return { w, dir: 'same', why: `Same as last time: beat ${fmtNum(w)} × ${r}` };
+}
+function freshSets(name, n, reps, prog) {
+  const sug = suggestFor(name, reps, prog), last = lastPerformance(name);
+  const w = sug ? String(sug.w) : last ? last.w : '';
+  return { sug, sets: Array.from({ length: n }, () => ({ w, r: '', eff: workEffort(prog), done: false })) };
+}
+
+/* ---------- guided mode: one set at a time ---------- */
+const isGuided = () => !!S.current && (S.current.mode || S.settings.sessionMode || 'guided') === 'guided';
+// Exercise groups: a superset (ss) is linked to the exercise after it.
+function exGroups(c) {
+  const out = []; let g = [];
+  c.exercises.forEach((ex, ei) => { g.push(ei); if (!ex.ss || ei === c.exercises.length - 1) { out.push(g); g = []; } });
+  return out;
+}
+// Every set in the order you'll do it: warm-ups first, supersets alternate round by round.
+function stepList(c) {
+  const out = [];
+  for (const g of exGroups(c)) {
+    g.forEach((ei) => (c.exercises[ei].warm || []).forEach((_, i) => out.push({ ei, k: 'warm', i })));
+    const n = Math.max(...g.map((ei) => c.exercises[ei].sets.length));
+    for (let j = 0; j < n; j++) g.forEach((ei) => { if (j < c.exercises[ei].sets.length) out.push({ ei, k: 'sets', i: j }); });
+  }
+  return out;
+}
+const stepSet = (c, st) => c.exercises[st.ei]?.[st.k]?.[st.i];
+const sameStep = (a, b) => a && b && a.ei === b.ei && a.k === b.k && a.i === b.i;
+function curStep(c) {
+  const steps = stepList(c);
+  const f = c.focus && steps.find((s) => sameStep(s, c.focus));
+  if (f && !stepSet(c, f).done) return f;
+  const from = f ? steps.indexOf(f) : -1;
+  return steps.slice(from + 1).find((s) => !stepSet(c, s).done) || steps.find((s) => !stepSet(c, s).done) || null;
+}
+function nextStepAfter(c, st) {
+  const steps = stepList(c), at = steps.findIndex((s) => sameStep(s, st));
+  return steps.slice(at + 1).find((s) => !stepSet(c, s).done) || steps.find((s) => !sameStep(s, st) && !stepSet(c, s).done) || null;
+}
+// Write a set value and carry it to later unfinished sets that were empty or matched (same rule as list view).
+function setValue(ei, k, si, key, val) {
+  const list = S.current.exercises[ei][k], prev = list[si][key];
+  list[si][key] = val;
+  if (k === 'sets') for (let j = si + 1; j < list.length; j++) { const st = list[j]; if (!st.done && (st[key] === '' || st[key] === prev)) st[key] = val; }
+  save();
+}
+const stepLabel = (c, st) => (st.k === 'warm' ? `Warm-up ${st.i + 1}` : `Set ${st.i + 1} of ${c.exercises[st.ei].sets.length}`);
+const setText = (s, unit) => (+s.w > 0 ? `${fmtNum(+s.w)} ${unit}${s.r ? ` × ${s.r}` : ''}` : s.r ? `${s.r} reps` : '–');
+
+function guidedDone() {
+  const c = S.current, st = curStep(c); if (!st) return;
+  const s = stepSet(c, st);
+  if (!(+s.r > 0)) { toast('Enter your reps first.'); $('#greps')?.focus(); return; }
+  s.done = true;
+  const nx = nextStepAfter(c, st);
+  c.focus = nx;
+  save();
+  const prog = progById(c.programId);
+  const ex = c.exercises[st.ei];
+  // In a superset, go straight to the partner exercise; rest after the round.
+  const noRest = !nx || (st.k === 'sets' && nx.k === 'sets' && nx.ei !== st.ei && exGroups(c).some((g) => g.includes(st.ei) && g.includes(nx.ei)) && nx.ei > st.ei);
+  if (noRest) { stopTimer(); render(); if (nx && nx.ei !== st.ei) toast(`Superset: straight to ${c.exercises[nx.ei].name}.`); }
+  else { startTimer(st.k === 'warm' ? 60 : restFor(prog)); render(); }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (!nx) toast('All sets done. Finish & log when ready.');
+  else if (nx.ei !== st.ei && !noRest) toast(`${ex.name} done. Next: ${c.exercises[nx.ei].name}.`);
+}
+
+function guidedView(c, prog) {
+  const unit = S.settings.unit;
+  const steps = stepList(c), doneN = steps.filter((s) => stepSet(c, s).done).length;
+  const st = curStep(c);
+  const resting = !!timer;
+  const ex = st ? c.exercises[st.ei] : null;
+  const s = st ? stepSet(c, st) : null;
+  const groups = exGroups(c), partner = ex && groups.find((g) => g.includes(st.ei) && g.length > 1);
+  const last = ex ? lastPerformance(ex.name) : null;
+  const inc = incU();
+  const bar = `<div class="gbar">${c.exercises.map((e, i) => { const t = e.sets.length + (e.warm || []).length, d = e.sets.filter((x) => x.done).length + (e.warm || []).filter((x) => x.done).length;
+    return `<button data-act="gjump" data-e="${i}" class="${st && st.ei === i ? 'on' : ''}" aria-label="${esc(e.name)}"><i style="width:${t ? Math.round((d / t) * 100) : 0}%"></i></button>`; }).join('')}</div>`;
+  const chips = ex ? `<div class="gchips">${[...(ex.warm || []).map((x, i) => ['warm', i, x, `W${i + 1}`]), ...ex.sets.map((x, i) => ['sets', i, x, String(i + 1)])].map(([k, i, x, lab]) =>
+    `<button class="${x.done ? 'done' : ''}${st.k === k && st.i === i ? ' on' : ''}${k === 'warm' ? ' w' : ''}" data-act="gfocus" data-e="${st.ei}" data-k="${k}" data-i="${i}"><b>${lab}</b><span>${x.done ? esc(setText(x, unit).replace(` ${unit}`, '')) : +x.w > 0 ? fmtNum(+x.w) : '–'}</span></button>`).join('')}</div>` : '';
+  const nx = st && nextStepAfter(c, st);
+  const nxt = nx ? (() => { const e = c.exercises[nx.ei], ns = stepSet(c, nx); return `${nx.ei !== st.ei ? `<b>${esc(e.name)}</b> · ` : ''}${stepLabel(c, nx)}${+ns.w > 0 ? ` · ${fmtNum(+ns.w)} ${unit}` : ''}${nx.k === 'sets' ? ` × ${esc(e.reps)}` : ''}`; })() : 'Finish & log';
+  const restNext = resting && st ? (() => { const e = c.exercises[st.ei]; return `${st.ei !== (c.lastEi ?? st.ei) ? `<b>${esc(e.name)}</b> · ` : ''}${stepLabel(c, st)}${+s.w > 0 ? ` · ${fmtNum(+s.w)} ${unit}` : ''}${st.k === 'sets' ? ` × ${esc(e.reps)}` : ''}`; })() : '';
+  return `
+  <header class="top"><div><div class="kicker">${esc(prog.name)}</div><h1 class="sm">${esc(c.dayName)}</h1></div>
+    <div class="row"><button class="icon" data-act="smode" data-m="list" aria-label="Switch to list view">${IC.list}</button>
+    <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
+    <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
+  ${bar}
+  <p class="muted small gcount">${doneN} of ${steps.length} sets done${c.started ? ` · <span class="gclock" data-t="${c.started}">${elapsed(c.started)}</span>` : ''}</p>
+  ${!st ? `<section class="card hero gall"><div class="kicker">Workout complete</div><h2>All sets done</h2>
+      <p class="muted">Log it to see your recap: personal bests, volume and your week.</p>
+      <button class="btn" data-act="finish">Finish & Log</button></section>`
+  : `<section class="card gcur">
+    <div class="row between"><div class="kicker">Exercise ${st.ei + 1} of ${c.exercises.length}${partner ? ` · Superset` : ''}</div><span class="badge">${esc(ex.target)}</span></div>
+    <h2><button class="exname" data-act="demo" data-n="${esc(ex.name)}" data-e="${st.ei}">${esc(ex.name)} <i class="info">ⓘ</i></button></h2>
+    ${partner ? `<p class="muted small">With ${esc(partner.filter((i) => i !== st.ei).map((i) => c.exercises[i].name).join(', '))}: no rest between them.</p>` : ''}
+    ${EX_DEMO[ex.name] ? `<div class="demo gdemo${S.settings.demoDark !== false ? ' dark' : ''}"><img src="${DEMO_BASE}${EX_DEMO[ex.name]}.gif" alt="${esc(ex.name)} animated demonstration" onerror="this.parentNode.classList.add('nodemo')"><span class="demo-off">Demo unavailable offline.</span></div>` : ''}
+    ${ex.note ? `<p class="muted small">${esc(ex.note)}</p>` : ''}
+    ${resting ? `<div class="grest">
+        <div class="kicker">Rest</div><div class="t">0:00</div>
+        <div class="row"><button class="btn ghost" data-act="gplus">+30 sec</button><button class="btn" data-act="gskip">Skip rest</button></div>
+        <p class="small gnext"><span class="muted">Up next:</span> ${restNext}</p>
+      </div>`
+    : `<div class="gset${st.k === 'warm' ? ' w' : ''}">
+        <div class="kicker">${stepLabel(c, st)}${st.k === 'warm' ? ` · ${esc(s.eff || warmDefault())}% effort` : ` · target ${esc(ex.reps)} reps`}</div>
+        ${st.k === 'sets' && ex.sug && st.i === 0 ? `<p class="gsug ${ex.sug.dir}">${ex.sug.dir === 'up' ? '↑' : ex.sug.dir === 'down' ? '↓' : '→'} Suggested ${fmtNum(ex.sug.w)} ${unit} · ${esc(ex.sug.why)}</p>` : ''}
+        <div class="gstep"><span>${unit}</span><button data-act="gnudge" data-key="w" data-d="-${inc}" aria-label="Less weight">−</button>
+          <input id="gw" inputmode="decimal" data-act="gval" data-key="w" value="${esc(s.w)}" placeholder="${st.k === 'warm' ? '~' : '0'}" aria-label="Weight"><button data-act="gnudge" data-key="w" data-d="${inc}" aria-label="More weight">+</button></div>
+        <div class="gstep"><span>reps</span><button data-act="gnudge" data-key="r" data-d="-1" aria-label="One rep fewer">−</button>
+          <input id="greps" inputmode="numeric" data-act="gval" data-key="r" value="${esc(s.r)}" placeholder="${esc(st.k === 'sets' ? ex.reps : 'reps')}" aria-label="Reps"><button data-act="gnudge" data-key="r" data-d="1" aria-label="One more rep">+</button></div>
+        <div class="gstep eff"><span>effort</span><button data-act="gnudge" data-key="eff" data-d="-5" aria-label="Less effort">−</button>
+          <input inputmode="numeric" data-act="gval" data-key="eff" value="${esc(s.eff ?? '')}" placeholder="${workEffort(prog)}" aria-label="Effort percent"><button data-act="gnudge" data-key="eff" data-d="5" aria-label="More effort">+</button></div>
+        <button class="btn gdone" data-act="gdone">${IC.check} Done set</button>
+        ${last ? `<p class="muted small">Last time: ${esc(setText(last, unit))} · ${esc(fmtDate(last.date))}</p>` : '<p class="muted small">First time logging this one.</p>'}
+        <p class="small gnext"><span class="muted">Then:</span> ${nxt}</p>
+      </div>`}
+    ${chips}
+    <div class="row warmlinks"><button class="link" data-act="addset" data-e="${st.ei}">+ Add set</button><button class="link" data-act="addwarm" data-e="${st.ei}">+ Warm-up</button></div>
+  </section>`}
+  <div class="kicker pad">Workout</div>
+  <section class="card list glist">${c.exercises.map((e, i) => { const t = e.sets.length, d = e.sets.filter((x) => x.done).length;
+    return `<button class="exrow${st && st.ei === i ? ' on' : ''}" data-act="gjump" data-e="${i}"><span>${e.ss ? '⇄ ' : ''}${esc(e.name)}<em> · ${esc(e.target)}</em></span><span class="badge${d === t ? ' ok' : ''}">${d}/${t}</span></button>`; }).join('')}</section>
+  ${goalsCard(c, prog).replace('<details class="card goals" open>', '<details class="card goals">')}
+  ${warmupCard(c)}
+  <label class="sdate">Workout date<input type="date" data-act="sessdate" value="${esc(c.date)}" max="${today()}"></label>
+  <div class="stack-btns">
+    <button class="btn${st ? ' ghost' : ''}" data-act="finish">Finish & Log</button>
+    <button class="btn ghost" data-act="discard">Discard</button>
+  </div>`;
+}
+const elapsed = (t) => { const m = Math.floor((Date.now() - t) / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m} min`; };
+
+// Keep the screen awake during a workout (iOS 16.4+ home-screen apps support this).
+let wakeLock = null;
+async function keepAwake(on) {
+  try {
+    if (on && !wakeLock && navigator.wakeLock && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!on && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+  } catch {}
+}
+
+/* ---------- weekly goal & streak ---------- */
+const weekStart = (d) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.toLocaleDateString('en-CA'); };
+const weekGoal = () => Math.min(14, +S.settings.weekGoal || CYCLE_PER_WEEK[S.activeProgram] || 3);
+function streakInfo() {
+  const goal = weekGoal(), per = {};
+  S.sessions.forEach((s) => { const w = weekStart(s.date); per[w] = (per[w] || 0) + 1; });
+  const thisWk = weekStart(today()), n = per[thisWk] || 0;
+  let streak = 0, wk = n >= goal ? thisWk : dateAdd(thisWk, -7);
+  while ((per[wk] || 0) >= goal) { streak++; wk = dateAdd(wk, -7); }
+  // best run ever
+  const weeks = Object.keys(per).sort(); let best = 0, run = 0, prev = null;
+  for (const w of weeks) { if (per[w] >= goal) { run = prev && dateAdd(prev, 7) === w ? run + 1 : 1; prev = w; best = Math.max(best, run); } else { run = 0; prev = null; } }
+  const days = Array.from({ length: 7 }, (_, i) => { const d = dateAdd(thisWk, i); return { d, n: S.sessions.filter((s) => s.date === d).length, today: d === today(), future: d > today() }; });
+  return { goal, n, streak, best: Math.max(best, streak), days, met: n >= goal };
+}
+function ring(n, goal, size = 64) {
+  const r = (size - 8) / 2, C = 2 * Math.PI * r, f = Math.min(1, goal ? n / goal : 0);
+  return `<svg class="ring" viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="rt"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="rf" stroke-dasharray="${(C * f).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`;
+}
+function streakCard() {
+  const s = streakInfo();
+  return `<section class="card streak">
+    <div class="ringwrap">${ring(s.n, s.goal)}<b>${s.n}<small>/${s.goal}</small></b></div>
+    <div class="sinfo">
+      <div class="kicker">This week</div>
+      <h3>${s.met ? 'Weekly goal hit' : `${s.goal - s.n} to go`}${s.streak ? ` · ${s.streak}-week streak` : ''}</h3>
+      <div class="wdots">${s.days.map((x) => `<span class="${x.n ? 'on' : ''}${x.today ? ' now' : ''}${x.future ? ' fut' : ''}"><i>${'MTWTFSS'[(new Date(x.d + 'T12:00').getDay() + 6) % 7]}</i></span>`).join('')}</div>
+      <p class="muted small">${s.best > s.streak ? `Best streak ${s.best} weeks. ` : ''}Goal: ${s.goal} workouts a week · <button class="link" data-act="go" data-v="settings">change</button></p>
+    </div>
+  </section>`;
+}
+
+/* ---------- recap after a workout ---------- */
+const setScore = (s) => (+s.w > 0 ? +s.w * (1 + (+s.r || 0) / 30) : +s.r || 0);
+function recapData(sess) {
+  const idx = S.sessions.indexOf(sess), before = S.sessions.slice(0, idx);
+  let vol = 0, sets = 0, reps = 0;
+  const rows = sess.exercises.map((ex) => {
+    ex.sets.forEach((s) => { sets++; reps += +s.r || 0; vol += (+s.w || 0) * (+s.r || 0); });
+    const cur = bestSet(ex.sets);
+    const hist = before.map((x) => x.exercises.find((e) => e.name === ex.name)).filter(Boolean);
+    const prev = hist.length ? bestSet(hist[hist.length - 1].sets) : null;
+    const prevMax = Math.max(0, ...hist.map((e) => { const b = bestSet(e.sets); return b ? setScore(b) : 0; }));
+    const pr = !!(cur && hist.length && setScore(cur) > prevMax + 0.01);
+    const dir = !cur || !prev ? '' : setScore(cur) > setScore(prev) + 0.01 ? 'up' : setScore(cur) < setScore(prev) - 0.01 ? 'down' : 'same';
+    return { name: ex.name, cur, prev, pr, dir, first: !hist.length };
+  });
+  return { rows, vol: Math.round(vol), sets, reps, prs: rows.filter((r) => r.pr) };
+}
+function recapView(id) {
+  const sess = S.sessions.find((s) => s.id === id) || S.sessions[S.sessions.length - 1];
+  if (!sess) return V.today();
+  const unit = S.settings.unit, d = recapData(sess), prog = progById(sess.programId), pr = sessionProgress(sess);
+  const arrow = { up: '<i class="up">↑</i>', down: '<i class="down">↓</i>', same: '<i>=</i>' };
+  return `
+  <header class="top"><button class="icon" data-act="go" data-v="today" aria-label="Back">${IC.back}</button><h1 class="sm">Recap</h1></header>
+  <section class="card hero recap">
+    <div class="kicker">${esc(prog?.name || '')}${sess.cycle ? ` · Cycle ${sess.cycle} · Week ${sess.week}` : ''}</div>
+    <h2>${esc(sess.dayName)}</h2>
+    <p class="muted">${esc(fmtDate(sess.date))}${pr.total ? ` · beat the logbook on ${pr.up} of ${pr.total} lifts` : ''}</p>
+    <div class="stats rstats">
+      ${sess.mins ? `<div><b>${sess.mins}</b><span>minutes</span></div>` : ''}
+      <div><b>${d.sets}</b><span>sets</span></div>
+      <div><b>${d.vol >= 10000 ? (d.vol / 1000).toFixed(1) + 'k' : d.vol}</b><span>${unit} volume</span></div>
+      <div><b>${d.prs.length}</b><span>new best${d.prs.length === 1 ? '' : 's'}</span></div>
+    </div>
+  </section>
+  ${d.prs.length ? `<section class="card prs"><div class="kicker">Personal bests</div>${d.prs.map((r) => `<div class="row between"><span>${esc(r.name)}</span><b>${esc(setText(r.cur, unit))}</b></div>`).join('')}
+    <p class="muted small">Best estimated strength you’ve logged on these lifts.</p></section>` : ''}
+  <section class="card rlist"><div class="kicker">Lift by lift · vs last time</div>
+    ${d.rows.map((r) => `<div class="rrow"><span>${esc(r.name)}${r.pr ? ' <em class="prb">BEST</em>' : ''}</span><span><b>${r.cur ? esc(setText(r.cur, unit)) : '–'}</b> ${r.dir ? arrow[r.dir] : ''}<small>${r.prev ? `last ${esc(setText(r.prev, unit))}` : r.first ? 'first time' : ''}</small></span></div>`).join('')}
+  </section>
+  ${streakCard()}
+  <div class="stack-btns">
+    <button class="btn" data-act="recapshare" data-id="${sess.id}">Share recap</button>
+    <button class="btn ghost" data-act="go" data-v="today">Done</button>
+  </div>`;
+}
+// Recap as an image card, for saving or sending.
+function recapImage(sess) {
+  const unit = S.settings.unit, d = recapData(sess), prog = progById(sess.programId), st = streakInfo();
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#2B3743'); bg.addColorStop(1, '#141B22'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  ['#33658C', '#39B4F2', '#E7E7E1', '#E8343B'].forEach((c, i) => { const w = 236 - i * 50; g.fillStyle = c; g.fillRect(80 + (236 - w) / 2, 92 + i * 22, w, 16); });
+  const T = (txt, x, y, font, col = '#E7E7E1', al = 'left') => { g.font = font; g.fillStyle = col; g.textAlign = al; g.fillText(txt, x, y); };
+  T('IRON', 340, 140, '900 44px "Archivo Black", Arial Black, sans-serif'); T('77', 340 + g.measureText('IRON').width + 4, 140, '900 44px "Archivo Black", Arial Black, sans-serif', '#39B4F2');
+  T((prog?.name || '').toUpperCase(), 80, 260, '600 30px "IBM Plex Mono", monospace', '#C3CCD4');
+  T(sess.dayName, 80, 340, '900 72px "Archivo Black", Arial Black, sans-serif');
+  T(fmtDate(sess.date) + (sess.cycle ? `  ·  Cycle ${sess.cycle}, week ${sess.week}` : ''), 80, 395, '500 30px Inter, sans-serif', '#C3CCD4');
+  const stats = [...(sess.mins ? [[sess.mins, 'MINUTES']] : []), [d.sets, 'SETS'], [d.vol >= 10000 ? (d.vol / 1000).toFixed(1) + 'k' : d.vol, unit.toUpperCase() + ' VOLUME'], [d.prs.length, 'NEW BESTS']];
+  const sw = (W - 160) / stats.length;
+  stats.forEach(([v, l], i) => { T(String(v), 80 + sw * i, 520, '900 70px "Archivo Black", Arial Black, sans-serif', i === stats.length - 1 && d.prs.length ? '#39B4F2' : '#E7E7E1'); T(l, 80 + sw * i, 565, '600 22px "IBM Plex Mono", monospace', '#C3CCD4'); });
+  g.fillStyle = 'rgba(231,231,225,.12)'; g.fillRect(80, 620, W - 160, 2);
+  let y = 690;
+  d.rows.slice(0, 8).forEach((r) => {
+    T(r.name.length > 26 ? r.name.slice(0, 25) + '…' : r.name, 80, y, '500 34px Inter, sans-serif');
+    T((r.cur ? setText(r.cur, unit) : '–') + (r.pr ? '  BEST' : r.dir === 'up' ? '  ↑' : ''), W - 80, y, '600 32px "IBM Plex Mono", monospace', r.pr || r.dir === 'up' ? '#39B4F2' : '#E7E7E1', 'right');
+    y += 70;
+  });
+  T(`${st.n}/${st.goal} this week${st.streak ? `  ·  ${st.streak}-week streak` : ''}`, 80, H - 90, '600 30px "IBM Plex Mono", monospace', '#39B4F2');
+  return new Promise((res) => cv.toBlob(res, 'image/png'));
+}
+async function shareRecap(id) {
+  const sess = S.sessions.find((s) => s.id === id); if (!sess) return;
+  try { await document.fonts?.ready; } catch {}
+  const blob = await recapImage(sess);
+  const file = new File([blob], `iron77-${sess.date}.png`, { type: 'image/png' });
+  if (navigator.canShare?.({ files: [file] })) { navigator.share({ files: [file], title: `IRON77 · ${sess.dayName}` }).catch(() => {}); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
 
 /* ---------- 6-week cycles ---------- */
 const cycleActive = () => (S.cycle && !S.cycle.done && S.cycle.programId === S.activeProgram ? S.cycle : null);
@@ -583,9 +857,12 @@ const IC = {
   timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>'),
   check: svg('<path d="M20 6L9 17l-5-5"/>'),
   arrow: svg('<path d="M5 12h14M13 6l6 6-6 6"/>'),
+  list: svg('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'),
+  play: svg('<path d="M7 4l13 8-13 8z"/>'),
 };
 
 const V = {};
+V.recap = recapView;
 
 function weekCard(prog, ph, r) {
   const cy = S.cycle, slots = weekSlots(cy, ph.wk), doneN = slots.filter((x) => x.done).length;
@@ -624,6 +901,7 @@ V.today = () => {
   <header class="top"><div><div class="brand"><svg class="mark" viewBox="0 0 300 242" aria-hidden="true"><rect x="0" y="0" width="300" height="50" rx="8" fill="#33658C"/><rect x="32" y="64" width="236" height="50" rx="8" fill="#39B4F2"/><rect x="64" y="128" width="172" height="50" rx="8" fill="#E7E7E1"/><rect x="96" y="192" width="108" height="50" rx="8" fill="#E8343B"/></svg><b>IRON<span>77</span></b></div><h1>${greet}</h1><div class="muted">${esc(fmtDate(today()))}</div></div>
     <button class="icon" data-act="go" data-v="settings" aria-label="Settings">${IC.gear}</button></header>
   <p class="creed">“${esc(creed)}”</p>
+  ${S.sessions.length ? streakCard() : ''}
   ${(!S.cycle && !S.cycleLater) || (S.cycle && (S.cycle.done || S.cycle.programId !== S.activeProgram)) ? cycleCard('today') : ''}
 
   ${S.current ? `<section class="card hot"><div class="kicker">In progress</div><h2>${esc(S.current.dayName)}</h2>
@@ -688,7 +966,7 @@ V.train = () => {
     return `<details class="card log"><summary><div><b>${esc(s.dayName)}</b> <span class="muted">· ${esc(fmtDate(s.date))}</span></div>
       ${pr.total ? `<span class="badge ${pr.up / pr.total >= 0.5 ? 'ok' : 'wait'}">${pr.up}/${pr.total} ↑</span>` : ''}</summary>
       ${s.exercises.map((e) => `<div class="row between small"><span>${esc(e.name)}</span><span>${(e.warm && e.warm.length ? `<em class="wu">W: ${e.warm.map((x) => `${esc(x.w)}×${esc(x.r)}@${esc(x.eff)}%`).join(', ')}</em> ` : '') + e.sets.map((x) => `${esc(x.w)}×${esc(x.r)}${x.eff ? `@${esc(x.eff)}%` : ''}`).join(', ')}</span></div>`).join('')}
-      <button class="link danger" data-act="delsession" data-id="${s.id}">Delete session</button></details>`;
+      <div class="row between"><button class="link" data-act="go" data-v="recap" data-arg="${s.id}">View recap ${IC.arrow}</button><button class="link danger" data-act="delsession" data-id="${s.id}">Delete session</button></div></details>`;
   }).join('') : '<p class="muted pad">No sessions yet. Your logbook starts with the first rep.</p>'}`;
 };
 
@@ -715,10 +993,11 @@ V.session = () => {
   const c = S.current;
   if (!c) return V.today();
   const prog = progById(c.programId);
+  if (isGuided()) return guidedView(c, prog);
   const unit = S.settings.unit;
   return `
   <header class="top"><div><div class="kicker">${esc(prog.name)}</div><h1 class="sm">${esc(c.dayName)}</h1></div>
-    <div class="row"><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
+    <div class="row"><button class="icon" data-act="smode" data-m="guided" aria-label="Switch to guided mode">${IC.play}</button><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
     <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
     <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
   <label class="sdate">Workout date<input type="date" data-act="sessdate" value="${esc(c.date)}" max="${today()}"></label>
@@ -727,13 +1006,13 @@ V.session = () => {
   ${c.exercises.map((ex, ei) => {
     const last = lastPerformance(ex.name);
     const top = upperReps(ex.reps);
-    const hint = last && top && +last.r >= top ? `Last time you hit ${esc(last.r)} reps at ${esc(last.w)}. Add weight (about 5%).` : '';
+    const hint = ex.sug ? `${esc(ex.sug.dir === 'up' ? '\u2191' : ex.sug.dir === 'down' ? '\u2193' : '\u2192')} Suggested ${fmtNum(ex.sug.w)} ${unit} \u00b7 ${esc(ex.sug.why)}` : last && top && +last.r >= top ? `\u2191 Last time you hit ${esc(last.r)} reps at ${esc(last.w)}. Add weight (about 5%).` : '';
     return `<section class="card ex">
       <div class="row between"><h3><button class="exname" data-act="demo" data-n="${esc(ex.name)}" data-e="${ei}">${ex.ss ? '⇄ ' : ''}${esc(ex.name)} <i class="info">ⓘ</i></button></h3><span class="badge">${esc(ex.target)}</span></div>
       ${ex.from ? `<p class="muted small">↺ Instead of ${esc(ex.from)}</p>` : ''}
       ${ex.note ? `<p class="muted small">${esc(ex.note)}</p>` : ''}
       ${last ? `<p class="small muted">Last: ${esc(last.w)} ${unit} × ${esc(last.r)} · ${esc(fmtDate(last.date))}</p>` : ''}
-      ${hint ? `<p class="small hint">↑ ${hint}</p>` : ''}
+      ${hint ? `<p class="small hint">${hint}</p>` : ''}
       ${(ex.warm || []).length ? `<div class="sets warm">
         <div class="set head w"><span>W</span><span>${unit}</span><span>reps</span><span>effort</span><span></span></div>
         ${ex.warm.map((s, wi) => {
@@ -753,7 +1032,7 @@ V.session = () => {
         ${ex.sets.map((s, si) => `<div class="set e${s.done ? ' done' : ''}">
           <button class="setno" data-act="delset" data-e="${ei}" data-s="${si}" aria-label="Remove set ${si + 1}">${si + 1}</button>
           <input inputmode="decimal" data-act="setval" data-e="${ei}" data-s="${si}" data-k="w" value="${esc(s.w)}" aria-label="Weight">
-          <input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="r" value="${esc(s.r)}" aria-label="Reps">
+          <input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="r" value="${esc(s.r)}" placeholder="${esc(ex.reps)}" aria-label="Reps">
           <label class="eff"><input inputmode="numeric" data-act="setval" data-e="${ei}" data-s="${si}" data-k="eff" value="${esc(s.eff ?? '')}" placeholder="${workEffort(prog)}" aria-label="Effort percent"><i>%</i></label>
           <button class="tick" data-act="donesset" data-e="${ei}" data-s="${si}" aria-label="Mark set done">${IC.check}</button>
         </div>`).join('')}
@@ -924,8 +1203,9 @@ function swapExercise(ei, to) {
   const original = ex.from || ex.name;
   ex.name = to;
   ex.from = to === original ? '' : original;
-  const last = lastPerformance(to);
-  ex.sets.forEach((st) => { if (!st.done) st.w = last ? last.w : ''; });
+  const fr = freshSets(to, 1, ex.reps, progById(S.current.programId));
+  ex.sug = fr.sug;
+  ex.sets.forEach((st) => { if (!st.done) st.w = fr.sets[0].w; });
   save(); closeSheet(); render();
   toast(to === original ? `Back to ${to}.` : `Swapped to ${to}.`);
 }
@@ -933,9 +1213,8 @@ function swapExercise(ei, to) {
 function addExercise(name) {
   const prog = progById(S.current.programId);
   const [n, reps] = STYLE_ADD[prog.style] || [3, '8-12'];
-  const last = lastPerformance(name);
-  S.current.exercises.push({ name, from: '', target: `${n} × ${reps}`, reps, ss: false, note: '', added: true,
-    sets: Array.from({ length: n }, () => ({ w: last ? last.w : '', r: '', eff: workEffort(prog), done: false })) });
+  const fr = freshSets(name, n, reps, prog);
+  S.current.exercises.push({ name, from: '', target: `${n} × ${reps}`, reps, ss: false, note: '', added: true, sets: fr.sets, sug: fr.sug });
   save(); closeSheet(); render(); toast(`Added ${name}.`);
   setTimeout(() => document.querySelectorAll('.card.ex')[S.current.exercises.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
 }
@@ -951,6 +1230,13 @@ V.settings = () => `
     <div class="row between"><h3>Reconstitution & dose calculator</h3>${IC.arrow}</div>
     <p class="muted small">Vial + water + dose → how many units to draw.</p>
   </button>
+  <section class="card">
+    <div class="kicker">Workouts</div>
+    <div class="seg">${[['guided', 'Guided \u00b7 one set at a time'], ['list', 'List \u00b7 all sets']].map(([k, n]) => `<button class="${(S.settings.sessionMode || 'guided') === k ? 'on' : ''}" data-act="setmode" data-k="${k}">${n}</button>`).join('')}</div>
+    <p class="muted small">How workouts open. You can switch inside any workout too.</p>
+    <label>Weekly goal (workouts per week)<input inputmode="numeric" data-act="setting" data-k="weekGoal" value="${weekGoal()}"></label>
+    <p class="muted small">Used for the streak on Today. Defaults to your program\u2019s weekly plan.</p>
+  </section>
   <section class="card">
     <div class="kicker">Warm-ups</div>
     <label>Default warm-up effort (%)<input inputmode="numeric" data-act="setting" data-k="warmEff" value="${warmDefault()}"></label>
@@ -1609,6 +1895,9 @@ document.addEventListener('click', (ev) => {
 /* ---------- render & routing ---------- */
 function render() {
   $('#view').innerHTML = (V[view] || V.today)(viewArg);
+  keepAwake(view === 'session' && !!S.current);
+  document.body.classList.toggle('guided', view === 'session' && isGuided());
+  if (timer) timerTick();
   document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === view || (['program', 'library', 'equipment', 'progress'].includes(view) && b.dataset.v === 'train') || (view === 'session' && b.dataset.v === 'train')));
 }
 function go(v, arg = null) { view = v; viewArg = arg; render(); window.scrollTo(0, 0); }
@@ -1697,6 +1986,27 @@ document.addEventListener('click', (ev) => {
       break;
     }
     case 'timer': timer ? stopTimer() : startTimer(+d.s); break;
+    case 'smode': S.current.mode = d.m; save(); render(); window.scrollTo(0, 0); break;
+    case 'setmode': S.settings.sessionMode = d.k; save(); render(); break;
+    case 'gdone': guidedDone(); break;
+    case 'gskip': stopTimer(); render(); break;
+    case 'gplus': timerEnd += 30000; timerTick(); break;
+    case 'gjump': { const c = S.current, st = stepList(c).find((x) => x.ei === +d.e && !stepSet(c, x).done) || stepList(c).find((x) => x.ei === +d.e); if (st) { c.focus = st; save(); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); } break; }
+    case 'gfocus': { const c = S.current, k = d.k, i = +d.i, ei = +d.e, sset = c.exercises[ei][k][i];
+      if (sset.done) { ask(`Redo ${k === 'warm' ? `warm-up ${i + 1}` : `set ${i + 1}`} of ${c.exercises[ei].name}? It goes back to not done so you can change it.`, 'Redo set', () => { sset.done = false; c.focus = { ei, k, i }; save(); render(); }); }
+      else { c.focus = { ei, k, i }; save(); render(); }
+      break; }
+    case 'gnudge': {
+      const c = S.current, st = curStep(c); if (!st) break;
+      const sset = stepSet(c, st), key = d.key, step = +d.d;
+      let v = parseFloat(sset[key]);
+      if (isNaN(v)) v = key === 'r' ? (step > 0 ? (lowerReps(c.exercises[st.ei].reps) || 1) - step : 0) : key === 'eff' ? (st.k === 'warm' ? warmDefault() : workEffort(progById(c.programId))) : 0;
+      v = Math.max(0, Math.round((v + step) * 100) / 100); if (key === 'eff') v = Math.min(100, Math.max(5, v));
+      if (st.k === 'sets') setValue(st.ei, 'sets', st.i, key, String(v)); else { sset[key] = String(v); save(); }
+      const inp = document.querySelector(`input[data-act="gval"][data-key="${key}"]`); if (inp) inp.value = String(v);
+      break;
+    }
+    case 'recapshare': shareRecap(d.id); break;
     case 'stoptimer': stopTimer(); break;
     case 'finish': finishSession(); break;
     case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { wuStop(); S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
@@ -1739,6 +2049,11 @@ document.addEventListener('change', (ev) => {
       if (wIn && base) wIn.placeholder = '~' + Math.round((base * v / 100) / inc) * inc;
     }
     st[d.k] = v; save();
+  } else if (d.act === 'gval') {
+    const c = S.current, st = curStep(c); if (!st) return;
+    let val = el.value.trim();
+    if (d.key === 'eff' && val !== '') { val = String(Math.max(1, Math.min(100, Math.round(+val) || 100))); el.value = val; }
+    if (st.k === 'sets') setValue(st.ei, 'sets', st.i, d.key, val); else { stepSet(c, st)[d.key] = val; save(); }
   } else if (d.act === 'setval') {
     // Fill the sets below with the same value: only ones not yet ticked off that are empty
     // or still match what this set held before (so values you typed differently are kept).
@@ -1808,7 +2123,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
     const check = () => reg.update().catch(() => {});
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { check(); keepAwake(view === 'session' && !!S.current); } });
     setInterval(check, 15 * 60 * 1000);
   }).catch(() => {});
   let reloading = false;
