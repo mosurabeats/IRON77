@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '44'; // keep in step with VERSION in sw.js
+const APP_VERSION = '45'; // keep in step with VERSION in sw.js
 // Developer diagnostics: keep the last 30 errors on this device for the debug report.
 const ERRKEY = 'iron77.errors';
 function logError(msg, where = '', stack = '') {
@@ -277,8 +277,37 @@ function workEffort(prog) {
   return prog.style === 'HIT' ? 100 : 90;
 }
 
+// Reopen a logged workout to fix mistakes. Saving replaces the logged copy; cancelling leaves it untouched.
+function editSession(id) {
+  const sess = S.sessions.find((x) => x.id === id); if (!sess) return;
+  if (S.current) { toast(S.current.editId ? 'You\u2019re already editing a workout. Save or cancel it first.' : 'Finish or discard your workout in progress first.'); return; }
+  const prog = progById(sess.programId) || PROGRAMS[0];
+  S.current = {
+    id: uid(), editId: sess.id, date: sess.date, programId: prog.id, dayName: sess.dayName, mode: 'list',
+    exercises: sess.exercises.map((e) => ({
+      name: e.name, from: '', target: `${e.sets.length} set${e.sets.length === 1 ? '' : 's'}`, reps: '', ss: false, note: '',
+      sets: e.sets.map((x) => ({ w: x.w ?? '', r: x.r ?? '', eff: x.eff ?? '', done: true })),
+      warm: (e.warm || []).map((x) => ({ w: x.w ?? '', r: x.r ?? '', eff: x.eff ?? '', done: true })),
+    })),
+  };
+  save(); go('session');
+}
+function saveEdit() {
+  const c = S.current, sess = S.sessions.find((x) => x.id === c.editId);
+  const exercises = c.exercises.map((e) => ({
+    name: e.name,
+    sets: e.sets.filter((x) => +x.r > 0).map(({ w, r, eff }) => ({ w, r, ...(eff !== '' && eff != null ? { eff: +eff } : {}) })),
+    warm: (e.warm || []).filter((x) => +x.r > 0 || +x.w > 0).map(({ w, r, eff }) => ({ w, r, eff })),
+  })).filter((e) => e.sets.length || e.warm.length).map(({ name, sets, warm }) => ({ name, sets, ...(warm.length ? { warm } : {}) }));
+  if (!exercises.length) { toast('Nothing left to save. To remove this workout, cancel and use Delete session in the logbook.'); return; }
+  if (sess) { sess.exercises = exercises; sess.date = c.date; }
+  S.sessions.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
+  S.current = null; save(); stopTimer();
+  go('recap', c.editId); toast('Changes saved.');
+}
 function finishSession() {
   wuStop();
+  if (S.current?.editId) { saveEdit(); return; }
   const c = S.current;
   c.exercises.forEach((e) => {
     e.sets = e.sets.filter((s) => s.done || +s.r > 0).map(({ w, r, eff }) => ({ w, r, ...(eff ? { eff: +eff } : {}) }));
@@ -342,7 +371,7 @@ function freshSets(name, n, reps, prog) {
 }
 
 /* ---------- guided mode: one set at a time ---------- */
-const isGuided = () => !!S.current && (S.current.mode || S.settings.sessionMode || 'guided') === 'guided';
+const isGuided = () => !!S.current && !S.current.editId && (S.current.mode || S.settings.sessionMode || 'guided') === 'guided';
 // Exercise groups: a superset (ss) is linked to the exercise after it.
 function exGroups(c) {
   const out = []; let g = [];
@@ -554,6 +583,7 @@ function recapView(id) {
   ${streakCard()}
   <div class="stack-btns">
     <button class="btn" data-act="recapshare" data-id="${sess.id}">Share recap</button>
+    <button class="btn ghost" data-act="editsession" data-id="${sess.id}">Edit workout</button>
     <button class="btn ghost" data-act="go" data-v="today">Done</button>
   </div>`;
 }
@@ -906,9 +936,9 @@ V.today = () => {
   ${S.sessions.length ? streakCard() : ''}
   ${(!S.cycle && !S.cycleLater) || (S.cycle && (S.cycle.done || S.cycle.programId !== S.activeProgram)) ? cycleCard('today') : ''}
 
-  ${S.current ? `<section class="card hot"><div class="kicker">In progress</div><h2>${esc(S.current.dayName)}</h2>
-    <button class="btn" data-act="go" data-v="session">Resume Workout</button>
-    <button class="btn ghost danger" data-act="discard">Discard Workout</button></section>` : ''}
+  ${S.current ? `<section class="card hot"><div class="kicker">${S.current.editId ? `Editing \u00b7 ${esc(fmtDate(S.current.date))}` : 'In progress'}</div><h2>${esc(S.current.dayName)}</h2>
+    <button class="btn" data-act="go" data-v="session">${S.current.editId ? 'Continue editing' : 'Resume Workout'}</button>
+    <button class="btn ghost danger" data-act="discard">${S.current.editId ? 'Cancel edit' : 'Discard Workout'}</button></section>` : ''}
 
   ${ph ? weekCard(prog, ph, r) : `
   <section class="card hero">
@@ -968,7 +998,7 @@ V.train = () => {
     return `<details class="card log"><summary><div><b>${esc(s.dayName)}</b> <span class="muted">· ${esc(fmtDate(s.date))}</span></div>
       ${pr.total ? `<span class="badge ${pr.up / pr.total >= 0.5 ? 'ok' : 'wait'}">${pr.up}/${pr.total} ↑</span>` : ''}</summary>
       ${s.exercises.map((e) => `<div class="row between small"><span>${esc(e.name)}</span><span>${(e.warm && e.warm.length ? `<em class="wu">W: ${e.warm.map((x) => `${esc(x.w)}×${esc(x.r)}@${esc(x.eff)}%`).join(', ')}</em> ` : '') + e.sets.map((x) => `${esc(x.w)}×${esc(x.r)}${x.eff ? `@${esc(x.eff)}%` : ''}`).join(', ')}</span></div>`).join('')}
-      <div class="row between"><button class="link" data-act="go" data-v="recap" data-arg="${s.id}">View recap ${IC.arrow}</button><button class="link danger" data-act="delsession" data-id="${s.id}">Delete session</button></div></details>`;
+      <div class="row between logacts"><button class="link" data-act="go" data-v="recap" data-arg="${s.id}">View recap ${IC.arrow}</button><button class="link" data-act="editsession" data-id="${s.id}">Edit</button><button class="link danger" data-act="delsession" data-id="${s.id}">Delete</button></div></details>`;
   }).join('') : '<p class="muted pad">No sessions yet. Your logbook starts with the first rep.</p>'}`;
 };
 
@@ -999,14 +1029,14 @@ V.session = () => {
   const unit = S.settings.unit;
   return `
   <header class="top"><div><div class="kicker">${esc(prog.name)}</div><h1 class="sm">${esc(c.dayName)}</h1></div>
-    <div class="row"><button class="icon" data-act="smode" data-m="guided" aria-label="Switch to guided mode">${IC.play}</button><button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
+    <div class="row">${c.editId ? '' : `<button class="icon" data-act="smode" data-m="guided" aria-label="Switch to guided mode">${IC.play}</button>`}<button class="icon" data-act="timer" data-s="${restFor(prog)}" aria-label="Rest timer">${IC.timer}</button>
     <button class="icon" data-act="addex" aria-label="Add exercise">+</button>
     <button class="icon" data-act="discard" aria-label="Discard workout">×</button></div></header>
   <label class="sdate">Workout date<input type="date" data-act="sessdate" value="${esc(c.date)}" max="${today()}"></label>
-  ${goalsCard(c, prog)}
-  ${warmupCard(c)}
+  ${c.editId ? `<section class="card editing"><div class="kicker">Editing a logged workout</div><p class="small">Change weights, reps, effort, the date, or add and remove sets and exercises. A set is saved if it has reps. <b>Save changes</b> replaces the logged copy; <b>Cancel</b> keeps it as it was.</p></section>` : `${goalsCard(c, prog)}
+  ${warmupCard(c)}`}
   ${c.exercises.map((ex, ei) => {
-    const last = lastPerformance(ex.name);
+    const last = lastPerformance(ex.name, c.editId);
     const top = upperReps(ex.reps);
     const hint = ex.sug ? `${esc(ex.sug.dir === 'up' ? '\u2191' : ex.sug.dir === 'down' ? '\u2193' : '\u2192')} Suggested ${fmtNum(ex.sug.w)} ${unit} \u00b7 ${esc(ex.sug.why)}` : last && top && +last.r >= top ? `\u2191 Last time you hit ${esc(last.r)} reps at ${esc(last.w)}. Add weight (about 5%).` : '';
     return `<section class="card ex">
@@ -1044,8 +1074,8 @@ V.session = () => {
   }).join('')}
   <button class="btn ghost" data-act="addex">+ Add Exercise</button>
   <div class="stack-btns">
-    <button class="btn" data-act="finish">Finish & Log</button>
-    <button class="btn ghost" data-act="discard">Discard</button>
+    <button class="btn" data-act="finish">${c.editId ? 'Save changes' : 'Finish & Log'}</button>
+    <button class="btn ghost" data-act="discard">${c.editId ? 'Cancel' : 'Discard'}</button>
   </div>`;
 };
 
@@ -1994,7 +2024,7 @@ document.addEventListener('click', (ev) => {
     }
     case 'donesset': {
       const s = S.current.exercises[+d.e].sets[+d.s]; s.done = !s.done; save(); render();
-      if (s.done) { const p = progById(S.current.programId); startTimer(restFor(p)); }
+      if (s.done && !S.current.editId) { const p = progById(S.current.programId); startTimer(restFor(p)); }
       break;
     }
     case 'timer': timer ? stopTimer() : startTimer(+d.s); break;
@@ -2021,7 +2051,12 @@ document.addEventListener('click', (ev) => {
     case 'recapshare': shareRecap(d.id); break;
     case 'stoptimer': stopTimer(); break;
     case 'finish': finishSession(); break;
-    case 'discard': ask('Discard this workout? Sets you entered won\u2019t be saved.', 'Discard workout', () => { wuStop(); S.current = null; save(); stopTimer(); go('today'); toast('Workout discarded.'); }); break;
+    case 'discard': {
+      const ed = S.current?.editId;
+      ask(ed ? 'Cancel editing? Your logged workout stays as it was.' : 'Discard this workout? Sets you entered won\u2019t be saved.', ed ? 'Cancel edit' : 'Discard workout', () => { wuStop(); S.current = null; save(); stopTimer(); if (ed) go('train'); else go('today'); toast(ed ? 'Edit cancelled. Nothing changed.' : 'Workout discarded.'); });
+      break;
+    }
+    case 'editsession': editSession(d.id); break;
     case 'delsession': ask('Delete this session from your logbook?', 'Delete session', () => { S.sessions = S.sessions.filter((s) => s.id !== d.id); save(); render(); }); break;
     case 'setlook': S.settings.look = d.k; save(); document.documentElement.classList.toggle('v2', d.k !== 'v1'); render(); toast(d.k === 'v1' ? 'Version 1 look restored.' : 'Version 2 look on.'); break;
     case 'setunit': S.settings.unit = d.u; save(); render(); break;
