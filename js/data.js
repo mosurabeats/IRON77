@@ -229,6 +229,7 @@ const EQUIPMENT = [
   ['cable', 'Cable stack / lat pulldown'], ['legpress', 'Leg press'], ['legext', 'Leg extension'],
   ['legcurl', 'Leg curl'], ['calf', 'Standing calf machine'], ['pecdeck', 'Pec deck'],
   ['hack', 'Hack squat machine'], ['preacher', 'Preacher bench'], ['nautilus', 'Nautilus pullover machine'],
+  ['hipmachine', 'Hip adduction / abduction machine'], ['band', 'Resistance bands'],
 ];
 
 // Old exercise names → current names (keeps logbook history matching).
@@ -824,6 +825,45 @@ Object.assign(ROTATE, {
   'Single-Arm Cable Pushdown': ['Single-Arm DB Kickback', 'Rope Pushdown'], 'Single-Arm DB Kickback': ['Single-Arm Cable Pushdown'],
   'Single-Arm Overhead DB Extension': ['Overhead DB Extension'], 'Single-Arm Lying DB Extension': ['Lying Triceps Extension'],
   'Single-Arm Cable Extension': ['Single-Arm Cable Pushdown'],
+});
+
+/* ---------- Adductors & abductors (inner and outer hip): bilateral and single-leg ---------- */
+Object.assign(EXERCISES, {
+  // Both legs at once
+  'Hip Adduction Machine': ['Legs', ['hipmachine'], ['Cable Hip Adduction', 'Copenhagen Plank', 'Side-Lying Hip Adduction'],
+    ['Sit tall with your back against the pad, pads on the inside of your knees.', 'Squeeze your legs together under control and pause for a second.', 'Let the pads open slowly to a deep, comfortable stretch. Don\u2019t let the stack bang.'], ''],
+  'Hip Abduction Machine': ['Legs', ['hipmachine'], ['Cable Hip Abduction', 'Banded Seated Hip Abduction', 'Side-Lying Hip Abduction'],
+    ['Sit with the pads on the outside of your knees, hands on the handles.', 'Push your knees apart as far as you can and pause.', 'Return slowly. Lean slightly forward to bias the glutes, sit upright for the outer hip.'], ''],
+  'Banded Seated Hip Abduction': ['Legs', ['band', 'bench'], ['Hip Abduction Machine', 'Banded Lateral Walk', 'Side-Lying Hip Abduction'],
+    ['Sit on the end of a bench, band just above your knees, feet flat.', 'Drive your knees out against the band and hold for a second.', 'Bring them back slowly, keeping tension on the band the whole set.'], ''],
+  'Banded Lateral Walk': ['Legs', ['band'], ['Banded Seated Hip Abduction', 'Side-Lying Hip Abduction', 'Hip Abduction Machine'],
+    ['Band around your knees or ankles, quarter squat, chest up.', 'Step sideways leading with the heel, keeping tension on the band.', 'Don\u2019t let your feet come together. Count steps each way as reps.'], ''],
+  // One leg at a time
+  'Cable Hip Adduction': ['Legs', ['cable'], ['Hip Adduction Machine', 'Copenhagen Plank', 'Side-Lying Hip Adduction'],
+    ['Ankle strap on a low pulley, stand side-on with the strapped leg nearest the stack.', 'Sweep that leg across and in front of your standing leg, keeping it straight.', 'Return slowly to a stretch. All reps, then switch legs.'], ''],
+  'Cable Hip Abduction': ['Legs', ['cable'], ['Hip Abduction Machine', 'Side-Lying Hip Abduction', 'Banded Lateral Walk'],
+    ['Ankle strap on a low pulley, stand side-on with the strapped leg furthest from the stack.', 'Lift that leg out to the side, toes forward, without leaning your torso.', 'Lower under control. All reps, then switch legs.'], ''],
+  'Copenhagen Plank': ['Legs', ['bench'], ['Side-Lying Hip Adduction', 'Cable Hip Adduction', 'Hip Adduction Machine'],
+    ['Side plank on your forearm with your top leg resting on a bench, inside of the foot or knee on the pad.', 'Lift your hips and bottom leg so your body is in a straight line, squeezing the top leg into the bench.', 'Hold, or raise and lower your hips. Knee on the bench is easier, foot is harder. Then switch sides.'], ''],
+  'Side-Lying Hip Abduction': ['Legs', [], ['Cable Hip Abduction', 'Hip Abduction Machine', 'Banded Lateral Walk'],
+    ['Lie on your side, bottom knee bent for balance, top leg straight.', 'Raise the top leg up and slightly back, toes pointing forward.', 'Lower slowly. Add an ankle weight or band when it gets easy. Then switch sides.'], ''],
+  'Side-Lying Hip Adduction': ['Legs', [], ['Cable Hip Adduction', 'Copenhagen Plank', 'Hip Adduction Machine'],
+    ['Lie on your side, cross your top leg over and plant that foot in front of you.', 'Raise your straight bottom leg as high as you can and pause.', 'Lower under control. Then switch sides.'], ''],
+});
+Object.assign(EX_DEMO, {
+  'Hip Adduction Machine': 'oHsrypV', 'Hip Abduction Machine': 'CHpahtl', 'Banded Seated Hip Abduction': '0xDpB4L', 'Banded Lateral Walk': 'O95afRA',
+  'Cable Hip Adduction': 'hBGWILP', 'Cable Hip Abduction': 'mQ1tBXn', 'Copenhagen Plank': 'VO2qeJg',
+  'Side-Lying Hip Abduction': '7WaDzyL', 'Side-Lying Hip Adduction': 'c8f5cSY',
+});
+Object.assign(EXTRA_TARGETS, {
+  'Hip Adduction Machine': 'Adductors', 'Cable Hip Adduction': 'Adductors', 'Copenhagen Plank': 'Adductors', 'Side-Lying Hip Adduction': 'Adductors',
+  'Hip Abduction Machine': 'Abductors', 'Cable Hip Abduction': 'Abductors', 'Banded Seated Hip Abduction': 'Abductors', 'Banded Lateral Walk': 'Abductors', 'Side-Lying Hip Abduction': 'Abductors',
+});
+Object.assign(ROTATE, {
+  'Hip Adduction Machine': ['Cable Hip Adduction', 'Copenhagen Plank'], 'Cable Hip Adduction': ['Hip Adduction Machine', 'Copenhagen Plank'],
+  'Copenhagen Plank': ['Cable Hip Adduction'], 'Side-Lying Hip Adduction': ['Copenhagen Plank'],
+  'Hip Abduction Machine': ['Cable Hip Abduction', 'Banded Seated Hip Abduction'], 'Cable Hip Abduction': ['Hip Abduction Machine', 'Banded Lateral Walk'],
+  'Banded Seated Hip Abduction': ['Hip Abduction Machine'], 'Banded Lateral Walk': ['Cable Hip Abduction'], 'Side-Lying Hip Abduction': ['Cable Hip Abduction'],
 });
 
 /* ---------- Second ("B") sessions for programs that repeat a day within a week ----------

@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '43'; // keep in step with VERSION in sw.js
+const APP_VERSION = '44'; // keep in step with VERSION in sw.js
 // Developer diagnostics: keep the last 30 errors on this device for the debug report.
 const ERRKEY = 'iron77.errors';
 function logError(msg, where = '', stack = '') {
@@ -65,6 +65,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch
 }
 
 if (S.swaps && Object.keys(S.swaps).length) { S.swaps = {}; save(); } // swaps are now per-workout only
+// New equipment types: assume your gym has them until you untick them in My gym.
+if (!S.equipAdded2) { S.equipment = [...new Set([...(S.equipment || []), 'hipmachine', 'band'])]; S.equipAdded2 = true; save(); }
 
 /* ---------- exercises & equipment ---------- */
 const lib = (n) => EXERCISES[n];
