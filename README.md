@@ -19,3 +19,4 @@ use Settings → Export to make a backup.
 - `js/data.js`: programs, exercises, and compounds (edit here to add content)
 - `js/app.js`: views and logic
 - `styles.css`, `index.html`, `sw.js` (offline), `manifest.webmanifest`
+- `ios/`: handoff for the native SwiftUI rebuild. `IOS_HANDOFF.md` is the spec and `iron77-content.json` is the content, regenerated with `node ios/export-content.js`.

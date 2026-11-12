@@ -1,0 +1,3798 @@
+{
+  "version": 1,
+  "note": "Generated from IRON77 js/data.js. Do not edit by hand; regenerate with ios/export-content.js.",
+  "demoBaseURL": "https://static.exercisedb.dev/media/",
+  "programs": [
+    {
+      "id": "heavy-duty",
+      "name": "Heavy Duty — Ideal Routine",
+      "legend": "Mike Mentzer",
+      "style": "HIT",
+      "level": "Intermediate",
+      "freq": "One workout every 4–7 days",
+      "restDays": 4,
+      "summary": "One all-out set per exercise, taken to positive failure, with long recovery between sessions. Pre-exhaust supersets hit the target muscle before the compound lift.",
+      "principles": [
+        "One working set per exercise, after warm-ups. Take it to failure.",
+        "Superset pairs (marked ⇄) with zero rest between the two movements.",
+        "Rep cadence: about 4 seconds up and 4 seconds down. No momentum.",
+        "If you fail to beat your last log, add rest days. Don’t add sets."
+      ],
+      "days": [
+        {
+          "name": "Chest & Back",
+          "exercises": [
+            {
+              "name": "Pec Deck",
+              "sets": 1,
+              "reps": "6-10",
+              "ss": true
+            },
+            {
+              "name": "Incline Press",
+              "sets": 1,
+              "reps": "1-3",
+              "note": "Immediately after flyes"
+            },
+            {
+              "name": "Nautilus Pullover",
+              "sets": 1,
+              "reps": "6-10",
+              "ss": true
+            },
+            {
+              "name": "Close-Grip Palms-Up Pulldown",
+              "sets": 1,
+              "reps": "6-10"
+            },
+            {
+              "name": "Deadlift",
+              "sets": 1,
+              "reps": "5-8"
+            }
+          ]
+        },
+        {
+          "name": "Legs",
+          "exercises": [
+            {
+              "name": "Leg Extension",
+              "sets": 1,
+              "reps": "8-15",
+              "ss": true
+            },
+            {
+              "name": "Leg Press",
+              "sets": 1,
+              "reps": "8-15"
+            },
+            {
+              "name": "Standing Calf Raise",
+              "sets": 1,
+              "reps": "12-20"
+            }
+          ]
+        },
+        {
+          "name": "Shoulders & Arms",
+          "exercises": [
+            {
+              "name": "DB Lateral Raise",
+              "sets": 1,
+              "reps": "6-10"
+            },
+            {
+              "name": "Bent-Over Lateral Raise",
+              "sets": 1,
+              "reps": "6-10"
+            },
+            {
+              "name": "Barbell Curl",
+              "sets": 1,
+              "reps": "6-10"
+            },
+            {
+              "name": "Triceps Pressdown",
+              "sets": 1,
+              "reps": "6-10",
+              "ss": true
+            },
+            {
+              "name": "Dips",
+              "sets": 1,
+              "reps": "3-5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consolidation",
+      "name": "Heavy Duty — Consolidation",
+      "legend": "Mike Mentzer",
+      "style": "HIT",
+      "level": "Advanced",
+      "freq": "One workout every 5–10 days",
+      "restDays": 5,
+      "summary": "Mentzer’s later stripped-down approach: just a few big compound movements and even more recovery. Adapted from his consolidation principles.",
+      "principles": [
+        "Very few exercises. Each set is maximal.",
+        "Recovery is where you grow. Rest until you are clearly stronger.",
+        "If strength stalls, add rest days rather than work."
+      ],
+      "days": [
+        {
+          "name": "A",
+          "exercises": [
+            {
+              "name": "Squat",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Dips",
+              "sets": 1,
+              "reps": "6-10"
+            }
+          ]
+        },
+        {
+          "name": "B",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 1,
+              "reps": "5-8"
+            },
+            {
+              "name": "Close-Grip Palms-Up Pulldown",
+              "sets": 1,
+              "reps": "6-10"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "colorado",
+      "name": "Nautilus Full-Body HIT",
+      "legend": "Arthur Jones & Casey Viator",
+      "style": "HIT",
+      "level": "Beginner–Intermediate",
+      "freq": "3× per week, full body",
+      "restDays": 2,
+      "summary": "In the spirit of the 1973 Colorado Experiment: brief full-body sessions, one set per exercise, moving fast from station to station.",
+      "principles": [
+        "One set to failure, 8–12 reps, minimal rest between exercises.",
+        "Strict form with slow negatives.",
+        "Increase the load once you hit the top of the rep range."
+      ],
+      "days": [
+        {
+          "name": "Full Body",
+          "exercises": [
+            {
+              "name": "Leg Press",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Leg Curl",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Nautilus Pullover",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Chin-Up",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Bench Press",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Overhead Press",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Barbell Curl",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Dips",
+              "sets": 1,
+              "reps": "8-12"
+            },
+            {
+              "name": "Standing Calf Raise",
+              "sets": 1,
+              "reps": "12-20"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "golden-six",
+      "name": "The Golden Six",
+      "legend": "Arnold Schwarzenegger",
+      "style": "Classic",
+      "level": "Beginner",
+      "freq": "3× per week (Mon / Wed / Fri)",
+      "restDays": 1,
+      "summary": "The classic six-exercise, full-body foundation associated with Arnold’s early training. Basic barbell movements, done often.",
+      "principles": [
+        "Add weight once you complete every set with clean reps.",
+        "Rest 60–90 seconds between sets.",
+        "Master the basics before you specialize."
+      ],
+      "days": [
+        {
+          "name": "Full Body",
+          "exercises": [
+            {
+              "name": "Squat",
+              "sets": 4,
+              "reps": "10"
+            },
+            {
+              "name": "Wide-Grip Bench Press",
+              "sets": 3,
+              "reps": "10"
+            },
+            {
+              "name": "Chin-Up",
+              "sets": 3,
+              "reps": "max"
+            },
+            {
+              "name": "Behind-the-Neck Press",
+              "sets": 4,
+              "reps": "10",
+              "note": "Or front press if shoulders object"
+            },
+            {
+              "name": "Barbell Curl",
+              "sets": 3,
+              "reps": "10"
+            },
+            {
+              "name": "Bent-Knee Sit-Up",
+              "sets": 3,
+              "reps": "max"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "park-5x5",
+      "name": "Reg Park 5×5",
+      "legend": "Reg Park",
+      "style": "Strength",
+      "level": "Beginner–Intermediate",
+      "freq": "3× per week",
+      "restDays": 1,
+      "summary": "Reg Park’s power-building base: heavy compound lifts for 5 sets of 5. The first two sets are progressive warm-ups and the last three are at working weight.",
+      "principles": [
+        "Sets 1–2 are warm-ups. Sets 3–5 are at the same working weight.",
+        "When you complete all 3 working sets of 5, add weight next session.",
+        "Rest 2–3 minutes between heavy sets."
+      ],
+      "days": [
+        {
+          "name": "Phase I",
+          "exercises": [
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": "5"
+            }
+          ]
+        },
+        {
+          "name": "Phase II",
+          "exercises": [
+            {
+              "name": "Front Squat",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Behind-the-Neck Press",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Barbell Row",
+              "sets": 5,
+              "reps": "5"
+            },
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": "5"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "arnold-split",
+      "name": "Arnold’s 6-Day Split",
+      "legend": "Arnold & the Gold’s Gym crew",
+      "style": "Volume",
+      "level": "Advanced",
+      "freq": "6 days on, 1 off (each day twice per week)",
+      "restDays": 0,
+      "summary": "The high-volume Venice Beach approach: chest and back paired, shoulders and arms together, then legs. Lots of sets, chasing the pump.",
+      "principles": [
+        "Pair antagonists (chest/back, biceps/triceps) for supersets.",
+        "Shock the muscle: vary angles, use forced reps and drop sets.",
+        "This much volume needs plenty of food and sleep."
+      ],
+      "days": [
+        {
+          "name": "Chest & Back",
+          "exercises": [
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": "6-10"
+            },
+            {
+              "name": "Incline Press",
+              "sets": 5,
+              "reps": "6-10"
+            },
+            {
+              "name": "DB Flyes",
+              "sets": 4,
+              "reps": "8-10"
+            },
+            {
+              "name": "Wide-Grip Chin-Up",
+              "sets": 5,
+              "reps": "max"
+            },
+            {
+              "name": "Barbell Row",
+              "sets": 5,
+              "reps": "8-10"
+            },
+            {
+              "name": "DB Pullover",
+              "sets": 4,
+              "reps": "10-12"
+            }
+          ]
+        },
+        {
+          "name": "Shoulders & Arms",
+          "exercises": [
+            {
+              "name": "Overhead Press",
+              "sets": 5,
+              "reps": "6-10"
+            },
+            {
+              "name": "DB Lateral Raise",
+              "sets": 4,
+              "reps": "8-12"
+            },
+            {
+              "name": "Barbell Curl",
+              "sets": 5,
+              "reps": "6-10",
+              "ss": true
+            },
+            {
+              "name": "Close-Grip Bench Press",
+              "sets": 5,
+              "reps": "6-10"
+            },
+            {
+              "name": "Incline DB Curl",
+              "sets": 4,
+              "reps": "8-10",
+              "ss": true
+            },
+            {
+              "name": "Lying Triceps Extension",
+              "sets": 4,
+              "reps": "8-10"
+            },
+            {
+              "name": "Wrist Curl",
+              "sets": 4,
+              "reps": "10-15"
+            }
+          ]
+        },
+        {
+          "name": "Legs",
+          "exercises": [
+            {
+              "name": "Squat",
+              "sets": 6,
+              "reps": "8-12"
+            },
+            {
+              "name": "Leg Extension",
+              "sets": 5,
+              "reps": "10-12"
+            },
+            {
+              "name": "Leg Curl",
+              "sets": 6,
+              "reps": "10-12"
+            },
+            {
+              "name": "Stiff-Leg Deadlift",
+              "sets": 4,
+              "reps": "10"
+            },
+            {
+              "name": "Standing Calf Raise",
+              "sets": 10,
+              "reps": "10"
+            },
+            {
+              "name": "Hanging Leg Raise",
+              "sets": 4,
+              "reps": "max"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gironda-8x8",
+      "name": "Gironda 8×8",
+      "legend": "Vince Gironda",
+      "style": "Density",
+      "level": "Intermediate",
+      "freq": "3–4 sessions per week, rotating",
+      "restDays": 1,
+      "summary": "The Iron Guru’s \"honest workout\": 8 sets of 8 with 15–30 seconds of rest, using a weight around 60% of what you’d use for 8 normal reps. Builds density and the pump.",
+      "principles": [
+        "Rest 15–30 seconds between sets. Use a timer.",
+        "If you can complete 8×8 on the short rest, add weight.",
+        "Choose a moderate weight. The short rest makes it hard."
+      ],
+      "days": [
+        {
+          "name": "Chest, Back & Shoulders",
+          "exercises": [
+            {
+              "name": "Neck Press",
+              "sets": 8,
+              "reps": "8"
+            },
+            {
+              "name": "Wide-Grip Chin-Up",
+              "sets": 8,
+              "reps": "8"
+            },
+            {
+              "name": "DB Lateral Raise",
+              "sets": 8,
+              "reps": "8"
+            }
+          ]
+        },
+        {
+          "name": "Arms",
+          "exercises": [
+            {
+              "name": "Preacher Curl",
+              "sets": 8,
+              "reps": "8"
+            },
+            {
+              "name": "Triceps Pressdown",
+              "sets": 8,
+              "reps": "8"
+            }
+          ]
+        },
+        {
+          "name": "Legs",
+          "exercises": [
+            {
+              "name": "Hack Squat",
+              "sets": 8,
+              "reps": "8"
+            },
+            {
+              "name": "Leg Curl",
+              "sets": 8,
+              "reps": "8"
+            },
+            {
+              "name": "Standing Calf Raise",
+              "sets": 8,
+              "reps": "8"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "programDayB": {
+    "arnold-split|Chest & Back": [
+      {
+        "name": "Incline DB Press",
+        "sets": 5,
+        "reps": "6-10"
+      },
+      {
+        "name": "Dips",
+        "sets": 4,
+        "reps": "8-12"
+      },
+      {
+        "name": "Cable Crossover",
+        "sets": 4,
+        "reps": "10-12"
+      },
+      {
+        "name": "Wide-Grip Pulldown",
+        "sets": 5,
+        "reps": "8-10"
+      },
+      {
+        "name": "Seated Cable Row",
+        "sets": 5,
+        "reps": "8-10"
+      },
+      {
+        "name": "Straight-Arm Pulldown",
+        "sets": 3,
+        "reps": "12-15"
+      }
+    ],
+    "arnold-split|Shoulders & Arms": [
+      {
+        "name": "Seated DB Press",
+        "sets": 5,
+        "reps": "8-10",
+        "note": "Arnold press: rotate palms from facing you to facing forward"
+      },
+      {
+        "name": "Cable Lateral Raise",
+        "sets": 4,
+        "reps": "10-12"
+      },
+      {
+        "name": "Bent-Over Lateral Raise",
+        "sets": 4,
+        "reps": "10-12"
+      },
+      {
+        "name": "Preacher Curl",
+        "sets": 4,
+        "reps": "8-10",
+        "ss": true
+      },
+      {
+        "name": "Overhead Cable Extension",
+        "sets": 4,
+        "reps": "10-12"
+      },
+      {
+        "name": "Concentration Curl",
+        "sets": 3,
+        "reps": "10-12",
+        "ss": true
+      },
+      {
+        "name": "Single-Arm DB Kickback",
+        "sets": 3,
+        "reps": "10-12"
+      },
+      {
+        "name": "DB Wrist Curl",
+        "sets": 3,
+        "reps": "12-15"
+      }
+    ],
+    "arnold-split|Legs": [
+      {
+        "name": "Front Squat",
+        "sets": 5,
+        "reps": "8-10"
+      },
+      {
+        "name": "Leg Press",
+        "sets": 4,
+        "reps": "12-15"
+      },
+      {
+        "name": "Leg Curl",
+        "sets": 5,
+        "reps": "10-12"
+      },
+      {
+        "name": "DB Romanian Deadlift",
+        "sets": 4,
+        "reps": "10"
+      },
+      {
+        "name": "Single-Leg DB Calf Raise",
+        "sets": 6,
+        "reps": "12-15"
+      },
+      {
+        "name": "Cable Crunch",
+        "sets": 4,
+        "reps": "12-15"
+      }
+    ]
+  },
+  "dayNotes": {
+    "heavy-duty|Chest & Back": {
+      "brief": "Pre-exhaust day: flyes straight into incline presses, pullovers straight into pulldowns, then one heavy deadlift. Five all-out sets, and every one has to count.",
+      "logistics": "Plan on 15–20 minutes. Warm up with one or two light sets of the first movement in each pair. Set the incline bench next to the pec deck (or flye bench) and the pulldown next to the pullover, so you can switch with no rest. Do the deadlift last, after a proper warm-up ramp, and rest 2–3 minutes before it. Log every set: next time you need one more rep or a little more weight.",
+      "philosophy": "Pre-exhaustion gets around the weak link. In a press or a pulldown your arms give out before your chest or lats are fully worked. Isolating the big muscle first and going straight into the compound lift lets your fresh arms drive the already-tired target past where it could go on its own. Mentzer’s point was that the stimulus is the intensity of the set, not the number of sets: one true failure set signals growth, and anything more only digs a deeper recovery hole."
+    },
+    "heavy-duty|Legs": {
+      "brief": "Leg extensions straight into leg presses, then calves. Short and brutal, done in 10–15 minutes.",
+      "logistics": "Warm up with a light set of extensions and leg presses. Load the leg press before you start the extensions, because the switch has to be immediate. Calves come last, with a full stretch at the bottom and a pause at the top. Expect the superset to wipe you out: rest as long as you need before calves.",
+      "philosophy": "The extensions exhaust the quads in isolation; the leg press then lets your hips and glutes push the quads beyond failure. Legs are your biggest muscles and draw hardest on recovery, which is why Mentzer gave them a day of their own and kept it brief."
+    },
+    "heavy-duty|Shoulders & Arms": {
+      "brief": "Side and rear delts, then curls, then pressdowns straight into dips. Isolation work, all to failure.",
+      "logistics": "About 15 minutes. Use moderate weight and strict form on the laterals, since shoulders cheat easily. Put the dip station next to the pressdown so the switch is instant. Rest 1–2 minutes between unpaired movements.",
+      "philosophy": "Your arms and shoulders already got indirect work on chest and back day, so they only need a little direct stimulus here. Small muscles recover quickly but your overall system doesn’t, so keep it short and let the logbook tell you whether you’re growing."
+    },
+    "consolidation|A": {
+      "brief": "Squats and dips, one all-out set each. The bare essentials of Mentzer’s later method.",
+      "logistics": "Ten minutes of work after a thorough warm-up. Ramp up on squats with 3–4 progressively heavier warm-up sets, then take one set to failure in the 8–12 range. Rest fully, then one set of dips. Use a safety rack or a spotter for the squat.",
+      "philosophy": "Late in his career Mentzer concluded that most people overtrain even on brief programs. Consolidation trains the whole body with a couple of big movements and long rests between workouts. If you aren’t stronger every session, you add rest, not work."
+    },
+    "consolidation|B": {
+      "brief": "Deadlifts and close-grip pulldowns: two movements, maximum effort, then a long rest.",
+      "logistics": "Warm up the deadlift carefully with several ramping sets. The working set is 5–8 reps with perfect form; end the set when your form starts to break, not after it has. Rest a few minutes, then one set of pulldowns to failure.",
+      "philosophy": "The deadlift taxes nearly every muscle in your body, and your recovery along with it, which is why it stands almost alone here. Fewer workouts, each one heavier than the last: that is the whole idea."
+    },
+    "colorado|Full Body": {
+      "brief": "Nine stations, one set each, moving quickly from one to the next so your heart rate stays high.",
+      "logistics": "About 25–30 minutes. Set up all the stations in order before you start so there’s almost no rest between them. Do 8–12 reps per exercise with slow negatives. If you need a breather between the leg work and the upper body, take it, but keep it short.",
+      "philosophy": "Arthur Jones believed intensity, not volume, drives growth, and that the whole body should be worked in sequence, to failure, in one session. Casey Viator’s Colorado Experiment results (debated as they are) made the case that brief, hard full-body training could build size fast."
+    },
+    "golden-six|Full Body": {
+      "brief": "The six classic basics, 3–4 sets each. A full-body foundation, three times a week.",
+      "logistics": "About 45–60 minutes. Rest 60–90 seconds between sets. Squat first while you’re fresh, keep the behind-the-neck press light (or switch to a front press if your shoulders object), and finish with sit-ups. Add weight once every set hits 10 clean reps.",
+      "philosophy": "Before split routines and specialisation, champions built their base on a handful of compound lifts done often. The goal is skill and strength on the basics; size follows from that."
+    },
+    "park-5x5|Phase I": {
+      "brief": "Squat, bench and deadlift for 5×5: two build-up sets, then three heavy working sets.",
+      "logistics": "About 45 minutes. Sets 1 and 2 are warm-ups rising to your working weight; sets 3–5 are all at that weight. Rest 2–3 minutes between heavy sets, and use a rack with safety bars for squat and bench. When you get 5 reps on all three working sets, add weight next time.",
+      "philosophy": "Reg Park’s base for raw strength and mass. He believed a bodybuilder should be strong first, and that a physique is built on numbers going up on the basic lifts."
+    },
+    "park-5x5|Phase II": {
+      "brief": "Six lifts at 5×5: more volume on the same heavy basics, once Phase I has built your base.",
+      "logistics": "About 75 minutes. Same pattern: two build-up sets, then three working sets. Front squats come first, then back squats, so take your time warming up. The press and row bring in your shoulders and upper back. Rest 2–3 minutes between heavy sets.",
+      "philosophy": "Once the big three were moving well, Park added more basic movements to round out the physique while keeping the heavy 5-rep work. It is still a strength program at heart: progress is measured in weight on the bar."
+    },
+    "arnold-split|Chest & Back": {
+      "brief": "Big chest and back volume, pairing pushes with pulls. Chase the pump.",
+      "logistics": "About 60–75 minutes. Pair a chest movement with a back movement (bench with chins, incline with rows) and alternate between them with 60–75 seconds’ rest. Use the full range of motion, with a deep stretch on the flyes and pullovers.",
+      "philosophy": "The Venice Beach approach: high volume, frequent training and the pump. Arnold paired opposing muscles so one rested while the other worked, and treated a full pump as the sign that a muscle had been worked hard enough. It demands lots of food and sleep to recover from."
+    },
+    "arnold-split|Shoulders & Arms": {
+      "brief": "Presses and raises, then curls and triceps work in supersets. Arm day, Venice style.",
+      "logistics": "About 60 minutes. Press heavy first, then do the laterals. Superset biceps with triceps (curls with close-grip bench, incline curls with lying extensions) and finish with wrist curls. Keep rests to about a minute.",
+      "philosophy": "Arnold’s \"shocking principle\": keep changing angles and techniques so the muscles never settle in. Arms were his showpiece, and he trained them with the same intensity as legs."
+    },
+    "arnold-split|Legs": {
+      "brief": "Squats, then quad and hamstring work, then ten sets of calves. Long and hard.",
+      "logistics": "About 75 minutes. Squat first and heaviest, then extensions and curls. Calves get 10 sets with a full stretch, a full squeeze and short rests. Finish with hanging leg raises.",
+      "philosophy": "Arnold famously cut the legs off his sweatpants so he couldn’t hide his weak calves from himself. Attack your weak points first and hardest; this is the day a lot of physiques are won."
+    },
+    "gironda-8x8|Chest, Back & Shoulders": {
+      "brief": "8×8 on the neck press, wide chins and laterals, with moderate weight and only 15–30 seconds’ rest.",
+      "logistics": "About 30–40 minutes. Pick a weight around 60% of what you’d use for a normal set of 8, and use a timer: 15–30 seconds between sets, no more. Take the neck press light and with a spotter, lowering the bar slowly to the base of your neck.",
+      "philosophy": "Vince Gironda called 8×8 the \"honest workout\": the short rests make a moderate weight brutally hard and build muscle density. He chose exercises to sculpt shape (the neck press for the upper, outer chest) rather than simply to add size."
+    },
+    "gironda-8x8|Arms": {
+      "brief": "Preacher curls and pressdowns, 8×8 each, with short rests and constant tension.",
+      "logistics": "About 25 minutes. Use a weight you could normally curl 12–14 times, and hold rests to 15–30 seconds. Keep strict form on the preacher bench, with no bouncing out of the bottom.",
+      "philosophy": "Gironda trained arms for shape, especially the lower biceps, using the preacher curl Larry Scott made famous. The density method floods the muscle with blood and keeps tension high without needing heavy weights."
+    },
+    "gironda-8x8|Legs": {
+      "brief": "Hack squats, leg curls and calves, 8×8 each, with short rests.",
+      "logistics": "About 35 minutes. Hack squat with a moderate weight and your feet low on the platform. Stick to the 15–30 second rests; the last sets of each exercise will be very hard. Use a full range of motion on every calf rep.",
+      "philosophy": "Gironda wasn’t a fan of heavy back squats for everyone; he preferred hack and sissy squats to build the quads without thickening the hips. Shape and density over sheer size."
+    },
+    "arnold-split|Chest & Back B": {
+      "brief": "Second chest and back day: new angles and the cables. Incline dumbbells, dips and crossovers, then pulldowns, cable rows and straight-arm work.",
+      "logistics": "About 60 minutes. Pair a push with a pull again (incline DB press with pulldowns, dips with cable rows) and keep rests around a minute. Dumbbells and cables let you go deeper and squeeze harder than the barbell day, so use slightly lighter weights and chase the stretch and contraction.",
+      "philosophy": "Arnold hit each muscle twice a week and rarely the same way twice. The A day builds with heavy barbells; the B day shapes and pumps from different angles, so the muscle never fully adapts. Variety in angle, not just more sets, is what fills out a physique."
+    },
+    "arnold-split|Shoulders & Arms B": {
+      "brief": "Arnold presses, cable and rear-delt work, then preacher and concentration curls paired with overhead and single-arm triceps.",
+      "logistics": "About 60 minutes. Start with the Arnold press, rotating your palms as you press. Superset the arm work as marked: preacher curls with overhead cable extensions, concentration curls with single-arm kickbacks. Rest about a minute between rounds and finish with wrist curls.",
+      "philosophy": "The A day loads the arms heavy; the B day isolates for peak and detail. Arnold used concentration curls and one-arm work to build the biceps peak, and believed every angle had to be trained to build complete arms."
+    },
+    "arnold-split|Legs B": {
+      "brief": "Front squats, high-rep leg press, leg curls and Romanian deadlifts, then single-leg calves and cable crunches.",
+      "logistics": "About 60–70 minutes. Front squat first while you’re fresh, then go for a burn on the high-rep leg press. Hamstrings get two movements. Do calves one leg at a time with a full stretch and a hard squeeze, and finish with cable crunches.",
+      "philosophy": "Heavy back squats on the A day build the base; the B day changes the angle and the rep range to bring up the quad sweep, hamstrings and calves. Arnold attacked his calves relentlessly until they matched the rest of him."
+    }
+  },
+  "equipment": [
+    {
+      "id": "barbell",
+      "name": "Barbell & plates"
+    },
+    {
+      "id": "rack",
+      "name": "Squat rack / power rack"
+    },
+    {
+      "id": "bench",
+      "name": "Flat & incline bench"
+    },
+    {
+      "id": "dumbbell",
+      "name": "Dumbbells"
+    },
+    {
+      "id": "pullup",
+      "name": "Pull-up / chin-up bar"
+    },
+    {
+      "id": "dip",
+      "name": "Dip station"
+    },
+    {
+      "id": "cable",
+      "name": "Cable stack / lat pulldown"
+    },
+    {
+      "id": "legpress",
+      "name": "Leg press"
+    },
+    {
+      "id": "legext",
+      "name": "Leg extension"
+    },
+    {
+      "id": "legcurl",
+      "name": "Leg curl"
+    },
+    {
+      "id": "calf",
+      "name": "Standing calf machine"
+    },
+    {
+      "id": "pecdeck",
+      "name": "Pec deck"
+    },
+    {
+      "id": "hack",
+      "name": "Hack squat machine"
+    },
+    {
+      "id": "preacher",
+      "name": "Preacher bench"
+    },
+    {
+      "id": "nautilus",
+      "name": "Nautilus pullover machine"
+    },
+    {
+      "id": "hipmachine",
+      "name": "Hip adduction / abduction machine"
+    },
+    {
+      "id": "band",
+      "name": "Resistance bands"
+    }
+  ],
+  "exerciseAliases": {
+    "Pec Deck or DB Flyes": "Pec Deck",
+    "Pullover (machine or DB)": "Nautilus Pullover",
+    "Leg Press or Squat": "Leg Press",
+    "Back Squat": "Squat",
+    "Neck Press (Gironda bench)": "Neck Press"
+  },
+  "exercises": [
+    {
+      "name": "Squat",
+      "group": "Legs",
+      "equipment": [
+        "barbell",
+        "rack"
+      ],
+      "alternatives": [
+        "Leg Press",
+        "Goblet Squat",
+        "Bulgarian Split Squat"
+      ],
+      "cues": [
+        "Bar on upper traps, feet shoulder-width, toes slightly out.",
+        "Break at hips and knees together; keep chest up and back tight.",
+        "Descend to at least parallel, then drive up through mid-foot."
+      ],
+      "target": null,
+      "demoId": "qXTaZnJ"
+    },
+    {
+      "name": "Front Squat",
+      "group": "Legs",
+      "equipment": [
+        "barbell",
+        "rack"
+      ],
+      "alternatives": [
+        "Goblet Squat",
+        "Squat",
+        "Leg Press"
+      ],
+      "cues": [
+        "Bar rests on front delts, elbows high.",
+        "Stay upright; sit straight down between your heels.",
+        "Keep elbows up all the way out of the hole."
+      ],
+      "target": null,
+      "demoId": "zG0zs85"
+    },
+    {
+      "name": "Leg Press",
+      "group": "Legs",
+      "equipment": [
+        "legpress"
+      ],
+      "alternatives": [
+        "Squat",
+        "Goblet Squat",
+        "Bulgarian Split Squat"
+      ],
+      "cues": [
+        "Feet mid-platform, shoulder-width.",
+        "Lower until knees are near your chest without your lower back rounding off the pad.",
+        "Press through heels; don’t lock the knees hard at the top."
+      ],
+      "target": null,
+      "demoId": "10Z2DXU"
+    },
+    {
+      "name": "Hack Squat",
+      "group": "Legs",
+      "equipment": [
+        "hack"
+      ],
+      "alternatives": [
+        "Front Squat",
+        "Leg Press",
+        "Goblet Squat"
+      ],
+      "cues": [
+        "Back flat on the pad, feet low-to-mid platform.",
+        "Descend deep under control.",
+        "Drive up without letting the hips lift off the pad."
+      ],
+      "target": null,
+      "demoId": "Qa55kX1"
+    },
+    {
+      "name": "Goblet Squat",
+      "group": "Legs",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "Bulgarian Split Squat",
+        "Sissy Squat"
+      ],
+      "cues": [
+        "Hold one dumbbell vertically at your chest.",
+        "Sit between your heels, elbows inside the knees.",
+        "Pause at the bottom, then stand tall."
+      ],
+      "target": null,
+      "demoId": "yn8yg1r"
+    },
+    {
+      "name": "Bulgarian Split Squat",
+      "group": "Legs",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Goblet Squat"
+      ],
+      "cues": [
+        "Rear foot on a bench, front foot a stride ahead.",
+        "Drop the back knee straight down.",
+        "Drive through the front heel. Do all reps, then switch legs."
+      ],
+      "target": null,
+      "demoId": "qx4fgX7"
+    },
+    {
+      "name": "Sissy Squat",
+      "group": "Legs",
+      "equipment": [],
+      "alternatives": [
+        "Bulgarian Split Squat",
+        "Goblet Squat"
+      ],
+      "cues": [
+        "Hold a support, rise onto your toes.",
+        "Lean back as your knees travel forward; hips stay extended.",
+        "Go as low as your knees allow, then return. Gironda’s quad isolator."
+      ],
+      "target": null,
+      "demoId": "xdYPUtE"
+    },
+    {
+      "name": "Leg Extension",
+      "group": "Legs",
+      "equipment": [
+        "legext"
+      ],
+      "alternatives": [
+        "Sissy Squat",
+        "Bulgarian Split Squat"
+      ],
+      "cues": [
+        "Knees in line with the machine pivot.",
+        "Extend fully and squeeze the quads for a beat.",
+        "Lower slowly, about 4 seconds."
+      ],
+      "target": null,
+      "demoId": "my33uHU"
+    },
+    {
+      "name": "Leg Curl",
+      "group": "Legs",
+      "equipment": [
+        "legcurl"
+      ],
+      "alternatives": [
+        "DB Leg Curl",
+        "Stiff-Leg Deadlift",
+        "DB Romanian Deadlift"
+      ],
+      "cues": [
+        "Pad just above the heels, knees off the bench edge.",
+        "Curl to full contraction, hips pressed down.",
+        "Lower slowly. Don’t let the weight stack slam."
+      ],
+      "target": null,
+      "demoId": "17lJ1kr"
+    },
+    {
+      "name": "DB Leg Curl",
+      "group": "Legs",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "DB Romanian Deadlift"
+      ],
+      "cues": [
+        "Lie face down, a dumbbell squeezed between your feet.",
+        "Curl it up slowly, keeping hips on the bench.",
+        "Use a light weight; control matters more than load."
+      ],
+      "target": null,
+      "demoId": "FkBIE6a"
+    },
+    {
+      "name": "Stiff-Leg Deadlift",
+      "group": "Legs",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "DB Romanian Deadlift",
+        "Leg Curl",
+        "Cable Pull-Through"
+      ],
+      "cues": [
+        "Soft knees, bar close to the legs.",
+        "Push the hips back until you feel a deep hamstring stretch.",
+        "Keep your back flat; stand by driving hips forward."
+      ],
+      "target": null,
+      "demoId": "wQ2c4XD"
+    },
+    {
+      "name": "DB Romanian Deadlift",
+      "group": "Legs",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "Stiff-Leg Deadlift",
+        "Cable Pull-Through"
+      ],
+      "cues": [
+        "Dumbbells in front of the thighs, soft knees.",
+        "Hinge at the hips, sliding the weights down your legs.",
+        "Back flat; return by squeezing glutes."
+      ],
+      "target": null,
+      "demoId": "rR0LJzx"
+    },
+    {
+      "name": "Standing Calf Raise",
+      "group": "Legs",
+      "equipment": [
+        "calf"
+      ],
+      "alternatives": [
+        "Single-Leg DB Calf Raise"
+      ],
+      "cues": [
+        "Balls of feet on the block, legs nearly straight.",
+        "Full stretch at the bottom: pause.",
+        "Rise as high as possible and hold the peak."
+      ],
+      "target": null,
+      "demoId": "ykUOVze"
+    },
+    {
+      "name": "Single-Leg DB Calf Raise",
+      "group": "Legs",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [],
+      "cues": [
+        "Stand on one foot on a step, dumbbell in the same-side hand.",
+        "Deep stretch at the bottom, full rise at the top.",
+        "All reps one leg, then switch."
+      ],
+      "target": null,
+      "demoId": "1kB3Wmk"
+    },
+    {
+      "name": "Deadlift",
+      "group": "Back",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "DB Romanian Deadlift"
+      ],
+      "cues": [
+        "Bar over mid-foot, shins close, grip just outside the legs.",
+        "Brace hard, chest up, back flat.",
+        "Push the floor away; bar stays against your legs. Lock out with the glutes."
+      ],
+      "target": null,
+      "demoId": "ila4NZS"
+    },
+    {
+      "name": "Barbell Row",
+      "group": "Back",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "One-Arm DB Row",
+        "Seated Cable Row"
+      ],
+      "cues": [
+        "Hinge to about 45°, back flat.",
+        "Row the bar to your lower ribs, elbows back.",
+        "Lower under control. No heaving."
+      ],
+      "target": null,
+      "demoId": "eZyBC3j"
+    },
+    {
+      "name": "One-Arm DB Row",
+      "group": "Back",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Barbell Row",
+        "Single-Arm Cable Row"
+      ],
+      "cues": [
+        "Knee and hand on the bench, back flat.",
+        "Pull the dumbbell toward your hip.",
+        "Full stretch at the bottom."
+      ],
+      "target": null,
+      "demoId": "C0MA9bC"
+    },
+    {
+      "name": "Chin-Up",
+      "group": "Back",
+      "equipment": [
+        "pullup"
+      ],
+      "alternatives": [
+        "Close-Grip Palms-Up Pulldown"
+      ],
+      "cues": [
+        "Palms facing you, shoulder-width.",
+        "Pull your chest toward the bar, elbows down and back.",
+        "Lower all the way to a dead hang."
+      ],
+      "target": null,
+      "demoId": "T2mxWqc"
+    },
+    {
+      "name": "Wide-Grip Chin-Up",
+      "group": "Back",
+      "equipment": [
+        "pullup"
+      ],
+      "alternatives": [
+        "Wide-Grip Pulldown",
+        "Chin-Up"
+      ],
+      "cues": [
+        "Overhand grip, wider than shoulders.",
+        "Pull up until chin clears the bar (or behind the neck, old-school style, if shoulders allow).",
+        "Stretch the lats fully at the bottom."
+      ],
+      "target": null,
+      "demoId": "Qqi7bko"
+    },
+    {
+      "name": "Wide-Grip Pulldown",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Wide-Grip Chin-Up"
+      ],
+      "cues": [
+        "Wide overhand grip, thighs locked under the pad.",
+        "Pull the bar to your upper chest, leaning back slightly.",
+        "Let the lats stretch fully on the way up."
+      ],
+      "target": null,
+      "demoId": "qdRxqCj"
+    },
+    {
+      "name": "Close-Grip Palms-Up Pulldown",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Chin-Up",
+        "Neutral-Grip Pulldown"
+      ],
+      "cues": [
+        "Underhand grip about 6 inches apart.",
+        "Pull to the upper chest, elbows driving down.",
+        "Slow 4-second return to a full stretch."
+      ],
+      "target": null,
+      "demoId": "ecpY0rH"
+    },
+    {
+      "name": "Nautilus Pullover",
+      "group": "Back",
+      "equipment": [
+        "nautilus"
+      ],
+      "alternatives": [
+        "DB Pullover",
+        "Straight-Arm Pulldown"
+      ],
+      "cues": [
+        "Adjust the seat so shoulders line up with the cam.",
+        "Elbows on the pads; drive them down and around to your stomach.",
+        "Return slowly into a deep lat stretch."
+      ],
+      "target": null,
+      "demoId": "4U7iLb5"
+    },
+    {
+      "name": "DB Pullover",
+      "group": "Back",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Straight-Arm Pulldown"
+      ],
+      "cues": [
+        "Lie across or along a bench, one dumbbell held over your chest.",
+        "Lower it behind your head with slightly bent arms.",
+        "Feel the lat and ribcage stretch, then pull back over."
+      ],
+      "target": null,
+      "demoId": "9XjtHvS"
+    },
+    {
+      "name": "Straight-Arm Pulldown",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "DB Pullover"
+      ],
+      "cues": [
+        "Face a high cable, arms nearly straight.",
+        "Sweep the bar down to your thighs using the lats.",
+        "Slow return overhead."
+      ],
+      "target": null,
+      "demoId": "x69MAlq"
+    },
+    {
+      "name": "Bench Press",
+      "group": "Chest",
+      "equipment": [
+        "barbell",
+        "bench"
+      ],
+      "alternatives": [
+        "DB Bench Press",
+        "Push-Up"
+      ],
+      "cues": [
+        "Shoulder blades pinched, feet planted.",
+        "Lower the bar to mid-chest under control.",
+        "Press up and slightly back. Use a spotter when going heavy."
+      ],
+      "target": null,
+      "demoId": "EIeI8Vf"
+    },
+    {
+      "name": "Wide-Grip Bench Press",
+      "group": "Chest",
+      "equipment": [
+        "barbell",
+        "bench"
+      ],
+      "alternatives": [
+        "DB Bench Press",
+        "Push-Up"
+      ],
+      "cues": [
+        "Grip a little wider than usual.",
+        "Lower to the chest, elbows out, for a big pec stretch.",
+        "Press up without bouncing."
+      ],
+      "target": null,
+      "demoId": "JsKq9so"
+    },
+    {
+      "name": "Incline Press",
+      "group": "Chest",
+      "equipment": [
+        "barbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Incline DB Press"
+      ],
+      "cues": [
+        "Bench at 30–45°.",
+        "Lower the bar to your upper chest.",
+        "Press straight up. In Heavy Duty, do this immediately after flyes."
+      ],
+      "target": null,
+      "demoId": "3TZduzM"
+    },
+    {
+      "name": "Neck Press",
+      "group": "Chest",
+      "equipment": [
+        "barbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Wide-Grip Bench Press",
+        "Incline DB Press"
+      ],
+      "cues": [
+        "Gironda’s chest builder: wide grip, elbows flared.",
+        "Lower the bar slowly to the base of your neck.",
+        "Use a light weight and a spotter. Skip it if your shoulders object."
+      ],
+      "target": null,
+      "demoId": "GXoaSgn"
+    },
+    {
+      "name": "DB Bench Press",
+      "group": "Chest",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Push-Up"
+      ],
+      "cues": [
+        "Dumbbells at chest level, palms forward.",
+        "Press up and slightly together.",
+        "Lower deep for a full stretch."
+      ],
+      "target": null,
+      "demoId": "SpYC0Kp"
+    },
+    {
+      "name": "Incline DB Press",
+      "group": "Chest",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "DB Bench Press",
+        "Low-to-High Cable Fly"
+      ],
+      "cues": [
+        "Bench at 30–45°.",
+        "Press up over the upper chest.",
+        "Lower slowly to a deep stretch."
+      ],
+      "target": null,
+      "demoId": "ns0SIbU"
+    },
+    {
+      "name": "Pec Deck",
+      "group": "Chest",
+      "equipment": [
+        "pecdeck"
+      ],
+      "alternatives": [
+        "DB Flyes",
+        "Cable Crossover"
+      ],
+      "cues": [
+        "Seat so handles are at chest height.",
+        "Squeeze the arms together; hold the contraction.",
+        "Return slowly to a full stretch. Pre-exhausts before presses."
+      ],
+      "target": null,
+      "demoId": "v3xmPAR"
+    },
+    {
+      "name": "DB Flyes",
+      "group": "Chest",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Cable Crossover",
+        "Pec Deck"
+      ],
+      "cues": [
+        "Slight bend in the elbows, locked in place.",
+        "Open wide in an arc to a deep stretch.",
+        "Hug the weights back up over the chest."
+      ],
+      "target": null,
+      "demoId": "yz9nUhF"
+    },
+    {
+      "name": "Cable Crossover",
+      "group": "Chest",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "DB Flyes"
+      ],
+      "cues": [
+        "Stand between high pulleys, slight lean forward.",
+        "Sweep the hands down and together.",
+        "Squeeze, then return slowly."
+      ],
+      "target": null,
+      "demoId": "0CXGHya"
+    },
+    {
+      "name": "Dips",
+      "group": "Chest",
+      "equipment": [
+        "dip"
+      ],
+      "alternatives": [
+        "Bench Dips",
+        "Close-Grip Bench Press"
+      ],
+      "cues": [
+        "Lean forward for chest, stay upright for triceps.",
+        "Lower until upper arms are about parallel.",
+        "Press up to lockout. Mentzer used these right after pressdowns."
+      ],
+      "target": null,
+      "demoId": "9WTm7dq"
+    },
+    {
+      "name": "Push-Up",
+      "group": "Chest",
+      "equipment": [],
+      "alternatives": [
+        "Bench Dips"
+      ],
+      "cues": [
+        "Hands just wider than shoulders, body rigid.",
+        "Chest to the floor.",
+        "Press up fully. Elevate your feet to make it harder."
+      ],
+      "target": null,
+      "demoId": "I4hDWkc"
+    },
+    {
+      "name": "Overhead Press",
+      "group": "Shoulders",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "Seated DB Press"
+      ],
+      "cues": [
+        "Bar at the collarbone, grip just outside the shoulders.",
+        "Squeeze glutes and press straight up.",
+        "Head through at the top."
+      ],
+      "target": null,
+      "demoId": "wdRZISl"
+    },
+    {
+      "name": "Behind-the-Neck Press",
+      "group": "Shoulders",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "Overhead Press",
+        "Seated DB Press"
+      ],
+      "cues": [
+        "Only if you can comfortably get the bar behind your head.",
+        "Lower to ear level, not lower.",
+        "Press up smoothly. Swap for front press if shoulders complain."
+      ],
+      "target": null,
+      "demoId": "xDh0lJr"
+    },
+    {
+      "name": "Seated DB Press",
+      "group": "Shoulders",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Overhead Press"
+      ],
+      "cues": [
+        "Upright bench, dumbbells at ear level.",
+        "Press up and slightly together.",
+        "Lower to a full stretch."
+      ],
+      "target": null,
+      "demoId": "znQUdHY"
+    },
+    {
+      "name": "DB Lateral Raise",
+      "group": "Shoulders",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "Cable Lateral Raise",
+        "Cable Upright Row"
+      ],
+      "cues": [
+        "Slight forward lean, slight elbow bend.",
+        "Raise out to the sides to shoulder height, pinkies slightly up.",
+        "Lower slowly. No swinging."
+      ],
+      "target": null,
+      "demoId": "DsgkuIt"
+    },
+    {
+      "name": "Cable Lateral Raise",
+      "group": "Shoulders",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "DB Lateral Raise"
+      ],
+      "cues": [
+        "Low pulley, handle in the far hand.",
+        "Raise out to shoulder height.",
+        "Constant tension: lower slowly."
+      ],
+      "target": null,
+      "demoId": "goJ6ezq"
+    },
+    {
+      "name": "Bent-Over Lateral Raise",
+      "group": "Shoulders",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "Reverse Pec Deck",
+        "Cable Rear Delt Fly"
+      ],
+      "cues": [
+        "Bend over until your torso is almost parallel to the floor.",
+        "Raise the dumbbells out wide, leading with the elbows.",
+        "Squeeze the rear delts; lower slowly."
+      ],
+      "target": null,
+      "demoId": "v1qBec9"
+    },
+    {
+      "name": "Reverse Pec Deck",
+      "group": "Shoulders",
+      "equipment": [
+        "pecdeck"
+      ],
+      "alternatives": [
+        "Bent-Over Lateral Raise",
+        "Face Pull"
+      ],
+      "cues": [
+        "Face the pad, handles at shoulder height.",
+        "Sweep the arms back, squeezing rear delts.",
+        "Slow return."
+      ],
+      "target": null,
+      "demoId": "xiHiJcA"
+    },
+    {
+      "name": "Barbell Curl",
+      "group": "Arms",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "DB Curl",
+        "Cable Curl"
+      ],
+      "cues": [
+        "Elbows pinned to your sides.",
+        "Curl to full contraction without leaning back.",
+        "Lower slowly to a full stretch."
+      ],
+      "target": null,
+      "demoId": "25GPyDY"
+    },
+    {
+      "name": "DB Curl",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "Concentration Curl",
+        "Cable Curl"
+      ],
+      "cues": [
+        "Palms forward or turn them up as you curl.",
+        "Squeeze at the top.",
+        "Lower under control."
+      ],
+      "target": null,
+      "demoId": "3s4NnTh"
+    },
+    {
+      "name": "Incline DB Curl",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "DB Curl",
+        "Cable Curl"
+      ],
+      "cues": [
+        "Bench at about 45°, arms hanging straight down.",
+        "Curl without moving the elbows forward.",
+        "Big stretch at the bottom."
+      ],
+      "target": null,
+      "demoId": "ae9UoXQ"
+    },
+    {
+      "name": "Preacher Curl",
+      "group": "Arms",
+      "equipment": [
+        "preacher"
+      ],
+      "alternatives": [
+        "Concentration Curl",
+        "Barbell Curl"
+      ],
+      "cues": [
+        "Armpits snug over the pad.",
+        "Curl up; stop just short of vertical.",
+        "Lower slowly, but not to a hard lockout."
+      ],
+      "target": null,
+      "demoId": "qOgPVf6"
+    },
+    {
+      "name": "Concentration Curl",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "DB Curl"
+      ],
+      "cues": [
+        "Seated, elbow braced against the inner thigh.",
+        "Curl up and twist the pinky up at the top.",
+        "Slow lowering."
+      ],
+      "target": null,
+      "demoId": "gvsWLQw"
+    },
+    {
+      "name": "Triceps Pressdown",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Lying Triceps Extension",
+        "Bench Dips",
+        "Rope Pushdown",
+        "Single-Arm Cable Pushdown"
+      ],
+      "cues": [
+        "Elbows pinned to your sides.",
+        "Push down to full lockout; squeeze.",
+        "Return until forearms are just past parallel."
+      ],
+      "target": null,
+      "demoId": "gAwDzB3"
+    },
+    {
+      "name": "Lying Triceps Extension",
+      "group": "Arms",
+      "equipment": [
+        "barbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Overhead DB Extension",
+        "Overhead Cable Extension",
+        "Single-Arm Lying DB Extension"
+      ],
+      "cues": [
+        "Lie on a bench, bar (EZ bar if you have one) over your forehead.",
+        "Bend only at the elbows to lower the bar.",
+        "Extend back up; elbows stay in."
+      ],
+      "target": null,
+      "demoId": "h8LFzo9"
+    },
+    {
+      "name": "Close-Grip Bench Press",
+      "group": "Arms",
+      "equipment": [
+        "barbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Dips",
+        "Push-Up"
+      ],
+      "cues": [
+        "Hands about shoulder-width.",
+        "Elbows tucked as you lower to the lower chest.",
+        "Press with the triceps."
+      ],
+      "target": null,
+      "demoId": "J6Dx1Mu"
+    },
+    {
+      "name": "Overhead DB Extension",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [
+        "Bench Dips",
+        "Overhead Cable Extension",
+        "Single-Arm Overhead DB Extension"
+      ],
+      "cues": [
+        "Hold one dumbbell overhead with both hands.",
+        "Lower behind your head, elbows pointing up.",
+        "Extend fully."
+      ],
+      "target": null,
+      "demoId": "PdmaD0N"
+    },
+    {
+      "name": "Bench Dips",
+      "group": "Arms",
+      "equipment": [
+        "bench"
+      ],
+      "alternatives": [
+        "Push-Up",
+        "Single-Arm DB Kickback"
+      ],
+      "cues": [
+        "Hands on the bench edge behind you, legs out.",
+        "Lower until elbows reach 90°.",
+        "Press back up."
+      ],
+      "target": null,
+      "demoId": "MU9HnE7"
+    },
+    {
+      "name": "Wrist Curl",
+      "group": "Arms",
+      "equipment": [
+        "barbell"
+      ],
+      "alternatives": [
+        "DB Wrist Curl"
+      ],
+      "cues": [
+        "Forearms on your thighs or a bench, palms up.",
+        "Let the bar roll to your fingertips.",
+        "Curl it back up with the wrists only."
+      ],
+      "target": null,
+      "demoId": "82LxxkW"
+    },
+    {
+      "name": "DB Wrist Curl",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell"
+      ],
+      "alternatives": [],
+      "cues": [
+        "Forearms on your thighs, palms up.",
+        "Roll the dumbbells to the fingertips.",
+        "Curl back up."
+      ],
+      "target": null,
+      "demoId": "2dImyQ8"
+    },
+    {
+      "name": "Bent-Knee Sit-Up",
+      "group": "Abs",
+      "equipment": [],
+      "alternatives": [
+        "Lying Leg Raise",
+        "Cable Crunch"
+      ],
+      "cues": [
+        "Knees bent, feet anchored.",
+        "Curl up one vertebra at a time.",
+        "Lower slowly; don’t yank your neck."
+      ],
+      "target": null,
+      "demoId": "AR0ig3o"
+    },
+    {
+      "name": "Hanging Leg Raise",
+      "group": "Abs",
+      "equipment": [
+        "pullup"
+      ],
+      "alternatives": [
+        "Lying Leg Raise",
+        "Cable Crunch"
+      ],
+      "cues": [
+        "Dead hang from the bar.",
+        "Raise knees or straight legs by curling the pelvis up.",
+        "Lower without swinging."
+      ],
+      "target": null,
+      "demoId": "I3tsCnC"
+    },
+    {
+      "name": "Lying Leg Raise",
+      "group": "Abs",
+      "equipment": [],
+      "alternatives": [
+        "Bent-Knee Sit-Up",
+        "Cable Crunch"
+      ],
+      "cues": [
+        "Lie flat, hands under your hips.",
+        "Raise legs to vertical.",
+        "Lower slowly, stopping just above the floor."
+      ],
+      "target": null,
+      "demoId": "WhuFnR7"
+    },
+    {
+      "name": "Seated Cable Row",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Barbell Row",
+        "One-Arm DB Row"
+      ],
+      "cues": [
+        "Sit tall, knees soft, chest up.",
+        "Pull the handle to your lower ribs, squeezing your shoulder blades together.",
+        "Let the weight pull your shoulders forward into a full stretch, without rounding your lower back."
+      ],
+      "target": "Upper back",
+      "demoId": "fUBheHs"
+    },
+    {
+      "name": "Single-Arm Cable Row",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "One-Arm DB Row",
+        "Seated Cable Row"
+      ],
+      "cues": [
+        "One handle, braced against the bench or your knee.",
+        "Row toward your hip, elbow close to your side.",
+        "Reach forward into a full lat stretch on the way back."
+      ],
+      "target": "Upper back",
+      "demoId": "vpp9Ku2"
+    },
+    {
+      "name": "Neutral-Grip Pulldown",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Close-Grip Palms-Up Pulldown",
+        "Chin-Up"
+      ],
+      "cues": [
+        "V-bar or neutral handles, thighs under the pad.",
+        "Pull to your upper chest, elbows driving down to your sides.",
+        "Slow return to a full stretch overhead."
+      ],
+      "target": "Lats",
+      "demoId": "4c9BhzB"
+    },
+    {
+      "name": "Cable Shrug",
+      "group": "Back",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [],
+      "cues": [
+        "Low pulley, straight bar, arms straight.",
+        "Shrug your shoulders straight up toward your ears.",
+        "Hold a second at the top, then lower all the way."
+      ],
+      "target": "Traps",
+      "demoId": "Eg98Ft9"
+    },
+    {
+      "name": "Low-to-High Cable Fly",
+      "group": "Chest",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Incline DB Press",
+        "Cable Crossover"
+      ],
+      "cues": [
+        "Pulleys set low, slight forward lean.",
+        "Sweep your hands up and together to about chin height.",
+        "Squeeze the upper chest, then lower slowly."
+      ],
+      "target": "Upper chest",
+      "demoId": "FVmZVhk"
+    },
+    {
+      "name": "Face Pull",
+      "group": "Shoulders",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Cable Rear Delt Fly",
+        "Bent-Over Lateral Raise"
+      ],
+      "cues": [
+        "Rope at upper-chest to face height.",
+        "Pull toward your face, elbows high and wide, hands finishing beside your ears.",
+        "Squeeze the rear delts and upper back, then return slowly."
+      ],
+      "target": "Rear delts",
+      "demoId": "wqNPGCg"
+    },
+    {
+      "name": "Cable Rear Delt Fly",
+      "group": "Shoulders",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Reverse Pec Deck",
+        "Bent-Over Lateral Raise"
+      ],
+      "cues": [
+        "Cross the cables: left hand holds the right cable, and vice versa.",
+        "Sweep your arms out wide at shoulder height.",
+        "Lead with the elbows and squeeze the rear delts."
+      ],
+      "target": "Rear delts",
+      "demoId": "aqvSOQE"
+    },
+    {
+      "name": "Cable Front Raise",
+      "group": "Shoulders",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "DB Lateral Raise"
+      ],
+      "cues": [
+        "Low pulley behind you, handle or bar in front of your thighs.",
+        "Raise straight up to shoulder height with a slight elbow bend.",
+        "Lower slowly against the cable."
+      ],
+      "target": "Front delts",
+      "demoId": "u2X71Np"
+    },
+    {
+      "name": "Cable Upright Row",
+      "group": "Shoulders",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Cable Lateral Raise",
+        "DB Lateral Raise"
+      ],
+      "cues": [
+        "Low pulley, straight bar, hands about shoulder-width.",
+        "Pull up along your body, elbows leading, to mid-chest.",
+        "Stop before your shoulders pinch; lower under control."
+      ],
+      "target": "Side delts",
+      "demoId": "cALKspW"
+    },
+    {
+      "name": "Cable Curl",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Barbell Curl",
+        "DB Curl"
+      ],
+      "cues": [
+        "Low pulley, straight or EZ bar, elbows pinned.",
+        "Curl to full contraction; the cable keeps tension at the top.",
+        "Lower slowly to a full stretch."
+      ],
+      "target": "Biceps",
+      "demoId": "G08RZcQ"
+    },
+    {
+      "name": "Cable Hammer Curl",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "DB Curl",
+        "Cable Curl"
+      ],
+      "cues": [
+        "Low pulley with a rope, palms facing each other.",
+        "Curl up, keeping your elbows at your sides.",
+        "Squeeze, then lower slowly."
+      ],
+      "target": "Biceps",
+      "demoId": "HPlPoQA"
+    },
+    {
+      "name": "Rope Pushdown",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Triceps Pressdown",
+        "Overhead DB Extension",
+        "Single-Arm Cable Pushdown"
+      ],
+      "cues": [
+        "High pulley with a rope, elbows pinned to your sides.",
+        "Push down and spread the rope apart at the bottom.",
+        "Return until your forearms are just past parallel."
+      ],
+      "target": "Triceps",
+      "demoId": "dU605di"
+    },
+    {
+      "name": "Overhead Cable Extension",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Overhead DB Extension",
+        "Lying Triceps Extension",
+        "Single-Arm Cable Extension"
+      ],
+      "cues": [
+        "Face away from the pulley, rope behind your head, elbows up.",
+        "Extend your arms forward and up to lockout.",
+        "Return slowly for a deep triceps stretch."
+      ],
+      "target": "Triceps",
+      "demoId": "2IxROQ1"
+    },
+    {
+      "name": "Cable Triceps Kickback",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Rope Pushdown",
+        "Overhead DB Extension",
+        "Single-Arm DB Kickback"
+      ],
+      "cues": [
+        "Hinge forward, upper arm parallel to the floor.",
+        "Extend the elbow straight back to lockout.",
+        "Keep the upper arm still; lower slowly."
+      ],
+      "target": "Triceps",
+      "demoId": "vvNjDJS"
+    },
+    {
+      "name": "Cable Pull-Through",
+      "group": "Legs",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Stiff-Leg Deadlift",
+        "DB Romanian Deadlift"
+      ],
+      "cues": [
+        "Face away from a low pulley, rope between your legs.",
+        "Hinge back at the hips with a flat back.",
+        "Drive your hips forward and squeeze your glutes to stand."
+      ],
+      "target": "Hamstrings",
+      "demoId": "OM46QHm"
+    },
+    {
+      "name": "Cable Glute Kickback",
+      "group": "Legs",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Cable Pull-Through"
+      ],
+      "cues": [
+        "Ankle strap on a low pulley, hold the frame for balance.",
+        "Kick the leg straight back, squeezing the glute.",
+        "Control it back to the start. All reps, then switch legs."
+      ],
+      "target": "Glutes",
+      "demoId": "Kpajagk"
+    },
+    {
+      "name": "Cable Crunch",
+      "group": "Abs",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Bent-Knee Sit-Up",
+        "Hanging Leg Raise"
+      ],
+      "cues": [
+        "Kneel facing a high pulley, rope beside your head.",
+        "Crunch your ribs toward your hips, rounding your spine.",
+        "Keep your hips still; return slowly."
+      ],
+      "target": "Abs",
+      "demoId": "WW95auq"
+    },
+    {
+      "name": "Cable Woodchop",
+      "group": "Abs",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Cable Crunch"
+      ],
+      "cues": [
+        "Stand side-on to the pulley, arms long.",
+        "Rotate through your torso, pulling the handle across your body.",
+        "Control it back. All reps, then switch sides."
+      ],
+      "target": "Abs",
+      "demoId": "aVs3BR3"
+    },
+    {
+      "name": "Single-Arm Cable Pushdown",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Rope Pushdown",
+        "Single-Arm DB Kickback"
+      ],
+      "cues": [
+        "High pulley with a single handle, elbow pinned to your side.",
+        "Push down to full lockout and squeeze; try an underhand grip for variety.",
+        "Return slowly until the forearm is just past parallel. All reps, then switch arms."
+      ],
+      "target": "Triceps",
+      "demoId": "qRZ5S1N"
+    },
+    {
+      "name": "Single-Arm Cable Extension",
+      "group": "Arms",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Single-Arm Cable Pushdown",
+        "Overhead Cable Extension"
+      ],
+      "cues": [
+        "Stand beside a high pulley, handle in the far hand.",
+        "Extend the arm down and across your body, keeping the upper arm still.",
+        "Control the return for a full stretch. All reps, then switch arms."
+      ],
+      "target": "Triceps",
+      "demoId": "sYCcnon"
+    },
+    {
+      "name": "Single-Arm Overhead DB Extension",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Overhead DB Extension",
+        "Overhead Cable Extension"
+      ],
+      "cues": [
+        "Sit tall, one dumbbell overhead, elbow pointing up.",
+        "Lower it behind your head, keeping the elbow close to your head.",
+        "Extend to lockout. Use your free hand to steady the elbow. Then switch arms."
+      ],
+      "target": "Triceps",
+      "demoId": "nAuHPcD"
+    },
+    {
+      "name": "Single-Arm DB Kickback",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Cable Triceps Kickback",
+        "Single-Arm Cable Pushdown"
+      ],
+      "cues": [
+        "Knee and hand on a bench, upper arm parallel to the floor.",
+        "Extend the elbow straight back to lockout and squeeze.",
+        "Keep the upper arm still; lower slowly. All reps, then switch arms."
+      ],
+      "target": "Triceps",
+      "demoId": "W6PxUkg"
+    },
+    {
+      "name": "Single-Arm Lying DB Extension",
+      "group": "Arms",
+      "equipment": [
+        "dumbbell",
+        "bench"
+      ],
+      "alternatives": [
+        "Lying Triceps Extension",
+        "Single-Arm Overhead DB Extension"
+      ],
+      "cues": [
+        "Lie on a bench, one dumbbell held straight up.",
+        "Lower it across your face toward the opposite shoulder, bending only at the elbow.",
+        "Extend back up. All reps, then switch arms."
+      ],
+      "target": "Triceps",
+      "demoId": "wyaqzOS"
+    },
+    {
+      "name": "Hip Adduction Machine",
+      "group": "Legs",
+      "equipment": [
+        "hipmachine"
+      ],
+      "alternatives": [
+        "Cable Hip Adduction",
+        "Copenhagen Plank",
+        "Side-Lying Hip Adduction"
+      ],
+      "cues": [
+        "Sit tall with your back against the pad, pads on the inside of your knees.",
+        "Squeeze your legs together under control and pause for a second.",
+        "Let the pads open slowly to a deep, comfortable stretch. Don’t let the stack bang."
+      ],
+      "target": "Adductors",
+      "demoId": "oHsrypV"
+    },
+    {
+      "name": "Hip Abduction Machine",
+      "group": "Legs",
+      "equipment": [
+        "hipmachine"
+      ],
+      "alternatives": [
+        "Cable Hip Abduction",
+        "Banded Seated Hip Abduction",
+        "Side-Lying Hip Abduction"
+      ],
+      "cues": [
+        "Sit with the pads on the outside of your knees, hands on the handles.",
+        "Push your knees apart as far as you can and pause.",
+        "Return slowly. Lean slightly forward to bias the glutes, sit upright for the outer hip."
+      ],
+      "target": "Abductors",
+      "demoId": "CHpahtl"
+    },
+    {
+      "name": "Banded Seated Hip Abduction",
+      "group": "Legs",
+      "equipment": [
+        "band",
+        "bench"
+      ],
+      "alternatives": [
+        "Hip Abduction Machine",
+        "Banded Lateral Walk",
+        "Side-Lying Hip Abduction"
+      ],
+      "cues": [
+        "Sit on the end of a bench, band just above your knees, feet flat.",
+        "Drive your knees out against the band and hold for a second.",
+        "Bring them back slowly, keeping tension on the band the whole set."
+      ],
+      "target": "Abductors",
+      "demoId": "0xDpB4L"
+    },
+    {
+      "name": "Banded Lateral Walk",
+      "group": "Legs",
+      "equipment": [
+        "band"
+      ],
+      "alternatives": [
+        "Banded Seated Hip Abduction",
+        "Side-Lying Hip Abduction",
+        "Hip Abduction Machine"
+      ],
+      "cues": [
+        "Band around your knees or ankles, quarter squat, chest up.",
+        "Step sideways leading with the heel, keeping tension on the band.",
+        "Don’t let your feet come together. Count steps each way as reps."
+      ],
+      "target": "Abductors",
+      "demoId": "O95afRA"
+    },
+    {
+      "name": "Cable Hip Adduction",
+      "group": "Legs",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Hip Adduction Machine",
+        "Copenhagen Plank",
+        "Side-Lying Hip Adduction"
+      ],
+      "cues": [
+        "Ankle strap on a low pulley, stand side-on with the strapped leg nearest the stack.",
+        "Sweep that leg across and in front of your standing leg, keeping it straight.",
+        "Return slowly to a stretch. All reps, then switch legs."
+      ],
+      "target": "Adductors",
+      "demoId": "hBGWILP"
+    },
+    {
+      "name": "Cable Hip Abduction",
+      "group": "Legs",
+      "equipment": [
+        "cable"
+      ],
+      "alternatives": [
+        "Hip Abduction Machine",
+        "Side-Lying Hip Abduction",
+        "Banded Lateral Walk"
+      ],
+      "cues": [
+        "Ankle strap on a low pulley, stand side-on with the strapped leg furthest from the stack.",
+        "Lift that leg out to the side, toes forward, without leaning your torso.",
+        "Lower under control. All reps, then switch legs."
+      ],
+      "target": "Abductors",
+      "demoId": "mQ1tBXn"
+    },
+    {
+      "name": "Copenhagen Plank",
+      "group": "Legs",
+      "equipment": [
+        "bench"
+      ],
+      "alternatives": [
+        "Side-Lying Hip Adduction",
+        "Cable Hip Adduction",
+        "Hip Adduction Machine"
+      ],
+      "cues": [
+        "Side plank on your forearm with your top leg resting on a bench, inside of the foot or knee on the pad.",
+        "Lift your hips and bottom leg so your body is in a straight line, squeezing the top leg into the bench.",
+        "Hold, or raise and lower your hips. Knee on the bench is easier, foot is harder. Then switch sides."
+      ],
+      "target": "Adductors",
+      "demoId": "VO2qeJg"
+    },
+    {
+      "name": "Side-Lying Hip Abduction",
+      "group": "Legs",
+      "equipment": [],
+      "alternatives": [
+        "Cable Hip Abduction",
+        "Hip Abduction Machine",
+        "Banded Lateral Walk"
+      ],
+      "cues": [
+        "Lie on your side, bottom knee bent for balance, top leg straight.",
+        "Raise the top leg up and slightly back, toes pointing forward.",
+        "Lower slowly. Add an ankle weight or band when it gets easy. Then switch sides."
+      ],
+      "target": "Abductors",
+      "demoId": "7WaDzyL"
+    },
+    {
+      "name": "Side-Lying Hip Adduction",
+      "group": "Legs",
+      "equipment": [],
+      "alternatives": [
+        "Cable Hip Adduction",
+        "Copenhagen Plank",
+        "Hip Adduction Machine"
+      ],
+      "cues": [
+        "Lie on your side, cross your top leg over and plant that foot in front of you.",
+        "Raise your straight bottom leg as high as you can and pause.",
+        "Lower under control. Then switch sides."
+      ],
+      "target": "Adductors",
+      "demoId": "c8f5cSY"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Retatrutide",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "reta glp-1 glp1 triple agonist",
+      "hint": ""
+    },
+    {
+      "name": "Tirzepatide",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "mounjaro zepbound tirz glp-1 glp1",
+      "hint": "Pens are pre-filled; vials are usually powder."
+    },
+    {
+      "name": "Semaglutide",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "ozempic wegovy sema glp-1 glp1",
+      "hint": "Pens are pre-filled; vials are usually powder."
+    },
+    {
+      "name": "Cagrilintide",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "cagri amylin",
+      "hint": ""
+    },
+    {
+      "name": "Mazdutide",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "glp-1 glp1",
+      "hint": ""
+    },
+    {
+      "name": "AOD-9604",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "aod fat loss",
+      "hint": ""
+    },
+    {
+      "name": "MOTS-c",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "mots mitochondrial",
+      "hint": ""
+    },
+    {
+      "name": "5-Amino-1MQ",
+      "kind": "peptide",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "5 amino 1mq nnmt",
+      "hint": ""
+    },
+    {
+      "name": "BPC-157",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "bpc body protection compound healing",
+      "hint": ""
+    },
+    {
+      "name": "TB-500",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "tb500 thymosin beta-4 tb4 healing",
+      "hint": ""
+    },
+    {
+      "name": "GHK-Cu",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "ghk copper peptide skin",
+      "hint": ""
+    },
+    {
+      "name": "KPV",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "anti-inflammatory",
+      "hint": ""
+    },
+    {
+      "name": "Thymosin Alpha-1",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "ta1 ta-1 immune",
+      "hint": ""
+    },
+    {
+      "name": "LL-37",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "ll37 immune",
+      "hint": ""
+    },
+    {
+      "name": "Ipamorelin",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "ipa ghrp gh secretagogue",
+      "hint": ""
+    },
+    {
+      "name": "CJC-1295 (no DAC)",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "cjc mod grf 1-29 modgrf",
+      "hint": ""
+    },
+    {
+      "name": "CJC-1295 with DAC",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "cjc dac",
+      "hint": ""
+    },
+    {
+      "name": "CJC-1295 / Ipamorelin blend",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "cjc ipa blend stack",
+      "hint": ""
+    },
+    {
+      "name": "Sermorelin",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "ghrh",
+      "hint": ""
+    },
+    {
+      "name": "Tesamorelin",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "egrifta tesa ghrh",
+      "hint": ""
+    },
+    {
+      "name": "GHRP-2",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "ghrp2",
+      "hint": ""
+    },
+    {
+      "name": "GHRP-6",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "ghrp6",
+      "hint": ""
+    },
+    {
+      "name": "Hexarelin",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "hex",
+      "hint": ""
+    },
+    {
+      "name": "MK-677 (Ibutamoren)",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "mk677 mk 677 ibutamoren nutrobal",
+      "hint": ""
+    },
+    {
+      "name": "HGH (Somatropin)",
+      "kind": "hormone",
+      "route": "SubQ",
+      "unit": "IU",
+      "mix": "recon",
+      "keywords": "gh growth hormone somatropin genotropin norditropin omnitrope",
+      "hint": "Dosed in IU. Check the IU per vial on your box."
+    },
+    {
+      "name": "IGF-1 LR3",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "igf igf1",
+      "hint": ""
+    },
+    {
+      "name": "PT-141 (Bremelanotide)",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "pt141 bremelanotide vyleesi libido",
+      "hint": ""
+    },
+    {
+      "name": "Melanotan II",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "mt2 mt-2 tanning",
+      "hint": ""
+    },
+    {
+      "name": "Kisspeptin-10",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "kisspeptin",
+      "hint": ""
+    },
+    {
+      "name": "Selank",
+      "kind": "peptide",
+      "route": "Other",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "nasal nootropic",
+      "hint": "Often taken as a nasal spray."
+    },
+    {
+      "name": "Semax",
+      "kind": "peptide",
+      "route": "Other",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "nasal nootropic",
+      "hint": "Often taken as a nasal spray."
+    },
+    {
+      "name": "Epitalon",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "epithalon longevity",
+      "hint": ""
+    },
+    {
+      "name": "DSIP",
+      "kind": "peptide",
+      "route": "SubQ",
+      "unit": "mcg",
+      "mix": "recon",
+      "keywords": "delta sleep",
+      "hint": ""
+    },
+    {
+      "name": "NAD+",
+      "kind": "supplement",
+      "route": "SubQ",
+      "unit": "mg",
+      "mix": "recon",
+      "keywords": "nad nicotinamide",
+      "hint": "Also taken as IV or oral precursors (NMN, NR)."
+    },
+    {
+      "name": "Testosterone Cypionate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "test cyp trt depo-testosterone",
+      "hint": "Vials are usually 200 mg/ml (sometimes 250). Check your label."
+    },
+    {
+      "name": "Testosterone Enanthate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "test e test enan trt xyosted",
+      "hint": "Vials are usually 250 mg/ml. Check your label."
+    },
+    {
+      "name": "Testosterone Propionate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "test prop",
+      "hint": "Check the mg/ml on your label."
+    },
+    {
+      "name": "Testosterone Undecanoate (oral)",
+      "kind": "hormone",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "jatenzo kyzatrex tlando test u",
+      "hint": ""
+    },
+    {
+      "name": "Testosterone Gel / Cream",
+      "kind": "hormone",
+      "route": "Topical",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "androgel testim cream trt topical",
+      "hint": ""
+    },
+    {
+      "name": "HCG",
+      "kind": "hormone",
+      "route": "SubQ",
+      "unit": "IU",
+      "mix": "recon",
+      "keywords": "hcg pregnyl novarel human chorionic gonadotropin",
+      "hint": "Dosed in IU. Check the IU per vial on your box."
+    },
+    {
+      "name": "Nandrolone Decanoate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "deca nandrolone",
+      "hint": "Check the mg/ml on your label."
+    },
+    {
+      "name": "Trenbolone Enanthate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "tren e",
+      "hint": "Check the mg/ml on your label."
+    },
+    {
+      "name": "Trenbolone Acetate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "tren a",
+      "hint": "Check the mg/ml on your label."
+    },
+    {
+      "name": "Boldenone Undecylenate",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "eq equipoise",
+      "hint": "Check the mg/ml on your label."
+    },
+    {
+      "name": "Drostanolone (Masteron)",
+      "kind": "hormone",
+      "route": "IM",
+      "unit": "mg",
+      "mix": "premix",
+      "keywords": "mast masteron",
+      "hint": "Check the mg/ml on your label."
+    },
+    {
+      "name": "Oxandrolone",
+      "kind": "hormone",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "anavar var",
+      "hint": ""
+    },
+    {
+      "name": "DHEA",
+      "kind": "hormone",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "dhea",
+      "hint": ""
+    },
+    {
+      "name": "Pregnenolone",
+      "kind": "hormone",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "preg",
+      "hint": ""
+    },
+    {
+      "name": "Levothyroxine (T4)",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mcg",
+      "mix": "",
+      "keywords": "synthroid t4 thyroid",
+      "hint": ""
+    },
+    {
+      "name": "Liothyronine (T3)",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mcg",
+      "mix": "",
+      "keywords": "cytomel t3 thyroid",
+      "hint": ""
+    },
+    {
+      "name": "Anastrozole",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "arimidex adex ai aromatase inhibitor",
+      "hint": ""
+    },
+    {
+      "name": "Letrozole",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "femara ai aromatase inhibitor",
+      "hint": ""
+    },
+    {
+      "name": "Exemestane",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "aromasin ai aromatase inhibitor",
+      "hint": ""
+    },
+    {
+      "name": "Enclomiphene",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "enclo serm",
+      "hint": ""
+    },
+    {
+      "name": "Clomiphene",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "clomid serm pct",
+      "hint": ""
+    },
+    {
+      "name": "Tamoxifen",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "nolvadex nolva serm pct",
+      "hint": ""
+    },
+    {
+      "name": "Cabergoline",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "dostinex caber prolactin",
+      "hint": ""
+    },
+    {
+      "name": "Finasteride",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "propecia proscar hair",
+      "hint": ""
+    },
+    {
+      "name": "Dutasteride",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "avodart hair",
+      "hint": ""
+    },
+    {
+      "name": "Minoxidil",
+      "kind": "medication",
+      "route": "Topical",
+      "unit": "ml",
+      "mix": "",
+      "keywords": "rogaine hair",
+      "hint": "Also available as oral tablets."
+    },
+    {
+      "name": "Tadalafil",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "cialis",
+      "hint": ""
+    },
+    {
+      "name": "Metformin",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "glucophage",
+      "hint": ""
+    },
+    {
+      "name": "Telmisartan",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "micardis blood pressure",
+      "hint": ""
+    },
+    {
+      "name": "Rosuvastatin",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "crestor statin cholesterol",
+      "hint": ""
+    },
+    {
+      "name": "Ezetimibe",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "zetia cholesterol",
+      "hint": ""
+    },
+    {
+      "name": "Low-dose aspirin",
+      "kind": "medication",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "aspirin",
+      "hint": ""
+    },
+    {
+      "name": "Creatine Monohydrate",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "creatine",
+      "hint": ""
+    },
+    {
+      "name": "Whey Protein",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "protein shake whey",
+      "hint": ""
+    },
+    {
+      "name": "Vitamin D3",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "IU",
+      "mix": "",
+      "keywords": "vit d d3 cholecalciferol",
+      "hint": ""
+    },
+    {
+      "name": "Vitamin K2",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mcg",
+      "mix": "",
+      "keywords": "k2 mk-7",
+      "hint": ""
+    },
+    {
+      "name": "Fish Oil (Omega-3)",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "omega epa dha",
+      "hint": ""
+    },
+    {
+      "name": "Magnesium Glycinate",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "magnesium mag",
+      "hint": ""
+    },
+    {
+      "name": "Zinc",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "zinc",
+      "hint": ""
+    },
+    {
+      "name": "Boron",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "boron",
+      "hint": ""
+    },
+    {
+      "name": "Multivitamin",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "tabs",
+      "mix": "",
+      "keywords": "multi",
+      "hint": ""
+    },
+    {
+      "name": "Ashwagandha",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "ksm-66 adaptogen",
+      "hint": ""
+    },
+    {
+      "name": "Tongkat Ali",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "longjack",
+      "hint": ""
+    },
+    {
+      "name": "Citrus Bergamot",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "bergamot cholesterol",
+      "hint": ""
+    },
+    {
+      "name": "Berberine",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "berberine",
+      "hint": ""
+    },
+    {
+      "name": "NAC",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "n-acetyl cysteine",
+      "hint": ""
+    },
+    {
+      "name": "TUDCA",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "liver support",
+      "hint": ""
+    },
+    {
+      "name": "L-Citrulline",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "citrulline pump",
+      "hint": ""
+    },
+    {
+      "name": "Beta-Alanine",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "beta alanine",
+      "hint": ""
+    },
+    {
+      "name": "Caffeine",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "pre-workout coffee",
+      "hint": ""
+    },
+    {
+      "name": "Electrolytes",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "sodium potassium lmnt",
+      "hint": ""
+    },
+    {
+      "name": "Collagen",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "collagen peptides",
+      "hint": ""
+    },
+    {
+      "name": "Psyllium Husk",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "fiber metamucil",
+      "hint": ""
+    },
+    {
+      "name": "Melatonin",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "mg",
+      "mix": "",
+      "keywords": "sleep",
+      "hint": ""
+    },
+    {
+      "name": "Desiccated Liver Tablets",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "tabs",
+      "mix": "",
+      "keywords": "liver gironda",
+      "hint": ""
+    },
+    {
+      "name": "Brewer’s Yeast",
+      "kind": "supplement",
+      "route": "Oral",
+      "unit": "g",
+      "mix": "",
+      "keywords": "yeast",
+      "hint": ""
+    }
+  ],
+  "trainGoals": [
+    {
+      "id": "size",
+      "name": "Build size",
+      "desc": "Add muscle mass all over."
+    },
+    {
+      "id": "strength",
+      "name": "Get stronger",
+      "desc": "Move more weight on the big lifts."
+    },
+    {
+      "id": "shape",
+      "name": "Shape & proportion",
+      "desc": "Classic lines: symmetry, detail and weak points."
+    },
+    {
+      "id": "brief",
+      "name": "Short & efficient",
+      "desc": "Brief workouts with plenty of recovery."
+    },
+    {
+      "id": "foundation",
+      "name": "All-round foundation",
+      "desc": "Solid basics, conditioning and good habits."
+    }
+  ],
+  "programFit": {
+    "heavy-duty": {
+      "size": 3,
+      "strength": 1,
+      "shape": 1,
+      "brief": 3,
+      "foundation": 1,
+      "level": 2,
+      "why": {
+        "size": "All-out intensity with full recovery, the Mentzer way to grow.",
+        "brief": "Three short sessions spread over two weeks."
+      }
+    },
+    "consolidation": {
+      "size": 1,
+      "strength": 3,
+      "shape": 0,
+      "brief": 3,
+      "foundation": 0,
+      "level": 3,
+      "why": {
+        "strength": "Big compound lifts only, with long recovery to keep getting stronger.",
+        "brief": "Two movements a session: the bare minimum that works."
+      }
+    },
+    "colorado": {
+      "size": 2,
+      "strength": 1,
+      "shape": 1,
+      "brief": 2,
+      "foundation": 3,
+      "level": 1,
+      "why": {
+        "foundation": "Brief full-body circuits that build strength and conditioning together.",
+        "size": "Fast full-body HIT, in the spirit of the Colorado Experiment."
+      }
+    },
+    "golden-six": {
+      "size": 2,
+      "strength": 2,
+      "shape": 1,
+      "brief": 1,
+      "foundation": 3,
+      "level": 1,
+      "why": {
+        "foundation": "The six classic basics: the base every golden-era champion built on.",
+        "size": "Full-body basics done often build a solid base of muscle."
+      }
+    },
+    "park-5x5": {
+      "size": 2,
+      "strength": 3,
+      "shape": 0,
+      "brief": 1,
+      "foundation": 2,
+      "level": 1,
+      "why": {
+        "strength": "Heavy 5×5 on the big lifts: Reg Park’s strength base.",
+        "foundation": "Simple heavy basics that build real strength."
+      }
+    },
+    "arnold-split": {
+      "size": 3,
+      "strength": 1,
+      "shape": 2,
+      "brief": 0,
+      "foundation": 0,
+      "level": 3,
+      "why": {
+        "size": "Venice Beach volume for maximum pump and mass.",
+        "shape": "Volume and variety to bring up every body part."
+      }
+    },
+    "gironda-8x8": {
+      "size": 2,
+      "strength": 0,
+      "shape": 3,
+      "brief": 1,
+      "foundation": 1,
+      "level": 2,
+      "why": {
+        "shape": "Gironda’s density training and exercise choice sculpt shape and detail.",
+        "size": "8×8 density work builds muscle without heavy loads."
+      }
+    }
+  },
+  "cycle": {
+    "weeks": 6,
+    "perWeek": {
+      "heavy-duty": 2,
+      "consolidation": 1,
+      "colorado": 3,
+      "golden-six": 3,
+      "park-5x5": 3,
+      "arnold-split": 6,
+      "gironda-8x8": 3
+    },
+    "phaseNames": [
+      "Groove",
+      "Build",
+      "Build",
+      "Push",
+      "Peak",
+      "Deload"
+    ],
+    "phases": {
+      "HIT": {
+        "sets": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "text": [
+          "Set your weights and dial in form. Stop each set 1–2 reps short of failure.",
+          "Every working set to true failure. Beat the logbook.",
+          "Every working set to true failure. Beat the logbook again.",
+          "After reaching failure, add 2–3 forced reps, or finish with one slow 8-second negative.",
+          "Rest-pause: after failure, rest 10–15 seconds, then squeeze out 1–2 more reps.",
+          "Deload: one set per exercise, stopping 2 reps short of failure. Test one key lift with a single all-out set."
+        ]
+      },
+      "Volume": {
+        "sets": [
+          -1,
+          0,
+          1,
+          1,
+          1,
+          "half"
+        ],
+        "text": [
+          "One set fewer than normal. Find your weights and groove each movement.",
+          "Full program volume. Chase the pump with controlled reps.",
+          "One extra set on each exercise. Keep rests honest.",
+          "Extra set, and make the last set of each exercise a drop set.",
+          "Shocking week: extra set, supersets and drop sets where they fit. The hardest week of the cycle.",
+          "Deload: half the sets at a comfortable weight. Let everything recover."
+        ]
+      },
+      "Strength": {
+        "sets": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          "half"
+        ],
+        "text": [
+          "Start at about 90% of your last bests. Fast, clean reps.",
+          "Add weight every session you complete all your reps.",
+          "Keep adding weight. Rest the full 2–3 minutes.",
+          "Bigger jumps where the bar moved fast last time. Rest up to 4 minutes.",
+          "Peak: after your 5×5, work up to one heavy triple on the first lift.",
+          "Deload: half the sets at about 80%. Test one lift with a heavy set of 3."
+        ]
+      },
+      "Classic": {
+        "sets": [
+          -1,
+          0,
+          0,
+          1,
+          1,
+          "half"
+        ],
+        "text": [
+          "One set fewer than normal. Set your weights with clean reps.",
+          "Full sets. Add weight once every set hits the target reps.",
+          "Full sets. Push for an extra rep on each.",
+          "One extra set per exercise.",
+          "Extra set, and take the last set of each exercise close to failure.",
+          "Deload: half the sets at a comfortable weight."
+        ]
+      },
+      "Density": {
+        "sets": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          "half"
+        ],
+        "text": [
+          "8×8 with 30 seconds’ rest. Find a weight you can complete all 64 reps with.",
+          "8×8 with 25–30 seconds’ rest. Add weight if you finish every rep.",
+          "8×8 with 25 seconds’ rest.",
+          "8×8 with only 20 seconds’ rest.",
+          "8×8 with 15 seconds’ rest: Gironda’s \"honest workout\" at its most honest.",
+          "Deload: 4×8 with 30 seconds’ rest at a comfortable weight."
+        ]
+      }
+    },
+    "coreLifts": [
+      "Squat",
+      "Deadlift",
+      "Bench Press",
+      "Overhead Press"
+    ],
+    "rotate": {
+      "Pec Deck": [
+        "DB Flyes",
+        "Cable Crossover"
+      ],
+      "DB Flyes": [
+        "Cable Crossover",
+        "Pec Deck"
+      ],
+      "Cable Crossover": [
+        "DB Flyes",
+        "Pec Deck"
+      ],
+      "Incline Press": [
+        "Incline DB Press"
+      ],
+      "Wide-Grip Bench Press": [
+        "DB Bench Press"
+      ],
+      "Nautilus Pullover": [
+        "Straight-Arm Pulldown",
+        "DB Pullover"
+      ],
+      "DB Pullover": [
+        "Straight-Arm Pulldown"
+      ],
+      "Close-Grip Palms-Up Pulldown": [
+        "Chin-Up",
+        "Neutral-Grip Pulldown"
+      ],
+      "Chin-Up": [
+        "Close-Grip Palms-Up Pulldown"
+      ],
+      "Wide-Grip Chin-Up": [
+        "Wide-Grip Pulldown"
+      ],
+      "Wide-Grip Pulldown": [
+        "Wide-Grip Chin-Up"
+      ],
+      "Barbell Row": [
+        "Seated Cable Row",
+        "One-Arm DB Row"
+      ],
+      "Leg Press": [
+        "Hack Squat"
+      ],
+      "Hack Squat": [
+        "Leg Press"
+      ],
+      "Front Squat": [
+        "Hack Squat"
+      ],
+      "Leg Extension": [
+        "Sissy Squat"
+      ],
+      "Stiff-Leg Deadlift": [
+        "DB Romanian Deadlift",
+        "Cable Pull-Through"
+      ],
+      "Behind-the-Neck Press": [
+        "Seated DB Press"
+      ],
+      "Seated DB Press": [
+        "Behind-the-Neck Press"
+      ],
+      "DB Lateral Raise": [
+        "Cable Lateral Raise"
+      ],
+      "Cable Lateral Raise": [
+        "DB Lateral Raise"
+      ],
+      "Bent-Over Lateral Raise": [
+        "Reverse Pec Deck",
+        "Cable Rear Delt Fly"
+      ],
+      "Reverse Pec Deck": [
+        "Bent-Over Lateral Raise"
+      ],
+      "Barbell Curl": [
+        "Cable Curl",
+        "DB Curl"
+      ],
+      "Incline DB Curl": [
+        "Cable Curl",
+        "Concentration Curl"
+      ],
+      "Preacher Curl": [
+        "Concentration Curl"
+      ],
+      "Triceps Pressdown": [
+        "Rope Pushdown",
+        "Single-Arm Cable Pushdown",
+        "Lying Triceps Extension"
+      ],
+      "Lying Triceps Extension": [
+        "Overhead Cable Extension",
+        "Single-Arm Lying DB Extension",
+        "Overhead DB Extension"
+      ],
+      "Hanging Leg Raise": [
+        "Cable Crunch",
+        "Lying Leg Raise"
+      ],
+      "Bent-Knee Sit-Up": [
+        "Cable Crunch",
+        "Lying Leg Raise"
+      ],
+      "Wrist Curl": [
+        "DB Wrist Curl"
+      ],
+      "Seated Cable Row": [
+        "Barbell Row",
+        "Single-Arm Cable Row"
+      ],
+      "Single-Arm Cable Row": [
+        "One-Arm DB Row"
+      ],
+      "One-Arm DB Row": [
+        "Single-Arm Cable Row"
+      ],
+      "Neutral-Grip Pulldown": [
+        "Close-Grip Palms-Up Pulldown"
+      ],
+      "Cable Curl": [
+        "Barbell Curl",
+        "Cable Hammer Curl"
+      ],
+      "DB Curl": [
+        "Cable Curl"
+      ],
+      "Cable Hammer Curl": [
+        "Cable Curl"
+      ],
+      "Rope Pushdown": [
+        "Triceps Pressdown",
+        "Single-Arm Cable Pushdown",
+        "Overhead Cable Extension"
+      ],
+      "Overhead Cable Extension": [
+        "Overhead DB Extension",
+        "Rope Pushdown"
+      ],
+      "Overhead DB Extension": [
+        "Single-Arm Overhead DB Extension",
+        "Overhead Cable Extension"
+      ],
+      "Face Pull": [
+        "Cable Rear Delt Fly"
+      ],
+      "Cable Rear Delt Fly": [
+        "Face Pull",
+        "Bent-Over Lateral Raise"
+      ],
+      "Low-to-High Cable Fly": [
+        "Cable Crossover"
+      ],
+      "Cable Crunch": [
+        "Hanging Leg Raise"
+      ],
+      "Single-Arm Cable Pushdown": [
+        "Single-Arm DB Kickback",
+        "Rope Pushdown"
+      ],
+      "Single-Arm DB Kickback": [
+        "Single-Arm Cable Pushdown"
+      ],
+      "Single-Arm Overhead DB Extension": [
+        "Overhead DB Extension"
+      ],
+      "Single-Arm Lying DB Extension": [
+        "Lying Triceps Extension"
+      ],
+      "Single-Arm Cable Extension": [
+        "Single-Arm Cable Pushdown"
+      ],
+      "Hip Adduction Machine": [
+        "Cable Hip Adduction",
+        "Copenhagen Plank"
+      ],
+      "Cable Hip Adduction": [
+        "Hip Adduction Machine",
+        "Copenhagen Plank"
+      ],
+      "Copenhagen Plank": [
+        "Cable Hip Adduction"
+      ],
+      "Side-Lying Hip Adduction": [
+        "Copenhagen Plank"
+      ],
+      "Hip Abduction Machine": [
+        "Cable Hip Abduction",
+        "Banded Seated Hip Abduction"
+      ],
+      "Cable Hip Abduction": [
+        "Hip Abduction Machine",
+        "Banded Lateral Walk"
+      ],
+      "Banded Seated Hip Abduction": [
+        "Hip Abduction Machine"
+      ],
+      "Banded Lateral Walk": [
+        "Cable Hip Abduction"
+      ],
+      "Side-Lying Hip Abduction": [
+        "Cable Hip Abduction"
+      ]
+    }
+  },
+  "warmupMoves": {
+    "general": [
+      [
+        "Light cardio (bike, rower or brisk walk)",
+        120
+      ],
+      [
+        "Jumping jacks",
+        30
+      ]
+    ],
+    "Chest": [
+      [
+        "Arm circles, forward",
+        20
+      ],
+      [
+        "Arm circles, backward",
+        20
+      ],
+      [
+        "Doorway chest stretch",
+        30
+      ],
+      [
+        "Scap push-ups",
+        30
+      ]
+    ],
+    "Back": [
+      [
+        "Lat stretch, hands on wall • left",
+        20
+      ],
+      [
+        "Lat stretch, hands on wall • right",
+        20
+      ],
+      [
+        "Cat–cow",
+        30
+      ],
+      [
+        "Dead hang",
+        20
+      ]
+    ],
+    "Shoulders": [
+      [
+        "Arm circles, forward",
+        20
+      ],
+      [
+        "Arm circles, backward",
+        20
+      ],
+      [
+        "Band pull-aparts (or reverse flyes, no weight)",
+        30
+      ],
+      [
+        "Wall slides",
+        30
+      ]
+    ],
+    "Arms": [
+      [
+        "Wrist circles",
+        20
+      ],
+      [
+        "Light band or bodyweight curls",
+        30
+      ],
+      [
+        "Triceps stretch • each arm",
+        30
+      ]
+    ],
+    "Legs": [
+      [
+        "Leg swings, front to back • left",
+        20
+      ],
+      [
+        "Leg swings, front to back • right",
+        20
+      ],
+      [
+        "Hip circles",
+        20
+      ],
+      [
+        "Bodyweight squats",
+        30
+      ],
+      [
+        "Ankle rocks",
+        20
+      ]
+    ],
+    "Abs": [
+      [
+        "Cat–cow",
+        30
+      ],
+      [
+        "Dead bug",
+        30
+      ]
+    ]
+  }
+}
