@@ -48,7 +48,7 @@ This is generated from `js/data.js` by `node ios/export-content.js`. Bundle it i
 **6-week cycles.** State: `{n, programId, goal, start, sessions, slots{week:[slotIdx]}, rot, done, end}`.
 - `per = perWeek[programId]` and `total = per × 6`. Weeks advance by sessions, not by the calendar: `week = min(6, floor(sessions / per) + 1)`.
 - Each week lists `per` slots, cycling through the program's days. You can do them in any order or mark one done without logging it.
-- Phases: Groove, Build, Build, Push, Peak, Deload. Each style has a set modifier per week (`-1`, `0`, `+1` or `"half"`) and the week's instructions. Adjusted sets: `half` → `ceil(n/2)`, otherwise `n + mod`, minimum 1. Single-set exercises are never modified.
+- Phases: Groove, Build, Build, Push, Peak, Deload. Each style has a set modifier per week (`-1`, `0`, `+1` or `"half"`) and the week's instructions. Adjusted sets: `half` → `ceil(n/2)`, otherwise `n + mod`, minimum 1. Single-set exercises are never modified, and extra sets (`mod > 0`) only go on exercises of 5 sets or fewer.
 
 **A/B days.** When a non-Strength program's `perWeek` is greater than its number of days, the second time a day comes up in a week it's the **B** version. That's `programDayB` if it exists. Otherwise every non-core lift swaps to its first doable `rotate` variation that isn't already in the day.
 

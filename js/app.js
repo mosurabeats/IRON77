@@ -3,7 +3,7 @@
 'use strict';
 
 const KEY = 'iron77.v1';
-const APP_VERSION = '45'; // keep in step with VERSION in sw.js
+const APP_VERSION = '46'; // keep in step with VERSION in sw.js
 // Developer diagnostics: keep the last 30 errors on this device for the debug report.
 const ERRKEY = 'iron77.errors';
 function logError(msg, where = '', stack = '') {
@@ -654,7 +654,9 @@ function phaseFor(prog) {
   const i = cycleInfo(cy), ph = PHASES[prog.style] || PHASES.Classic;
   return { ...i, n: cy.n, text: ph.text[i.wk - 1], setsMod: ph.sets[i.wk - 1] };
 }
-const adjSets = (n, mod) => (mod === 'half' ? Math.max(1, Math.ceil(n / 2)) : Math.max(1, n + (n > 1 ? mod : 0)));
+// Phase set changes. Extra sets only go on exercises of up to 5 sets: high-volume ones (Arnold's 10 calf sets, Gironda's 8×8) are already enough.
+const MAX_BONUS_BASE = 5;
+const adjSets = (n, mod) => (mod === 'half' ? Math.max(1, Math.ceil(n / 2)) : Math.max(1, n + (n > 1 && !(mod > 0 && n > MAX_BONUS_BASE) ? mod : 0)));
 // From cycle 2, swap about half the non-core exercises for a same-target variation.
 function buildRotation(prog, n) {
   const rot = {}; if (n < 2) return rot;
